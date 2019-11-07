@@ -18,7 +18,7 @@ struct Handler;
 impl EventHandler for Handler {
     fn message(&self, ctx: Context, msg: Message) {
         lazy_static! {
-            static ref ROLL_COMMAND_REGEX: Regex = Regex::new(r"^!roll +(.*)$").unwrap();
+            static ref ROLL_COMMAND_REGEX: Regex = Regex::new(r"^!(?:r|roll) +(.*)$").unwrap();
         }
 
         let response = if msg.content == "!help" {
