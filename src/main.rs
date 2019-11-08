@@ -5,7 +5,7 @@ mod character;
 mod character_roll;
 mod roll;
 
-use character::{Ability, Character};
+use character::{Ability, Character, CharacterAttribute};
 use character_roll::CharacterRoll;
 use r2d2::Pool;
 use r2d2_sqlite::SqliteConnectionManager;
@@ -29,6 +29,7 @@ enum Command {
     Help,
     Increment,
     Roll { roll: Roll },
+    Set { attribute: CharacterAttribute },
     ShowAbilities,
 }
 
@@ -36,6 +37,7 @@ impl Command {
     fn parse(command: &str) -> Option<Command> {
         lazy_static! {
             static ref ROLL_COMMAND_REGEX: Regex = Regex::new(r"^!(?:r|roll) +(.*)$").unwrap();
+            static ref SET_COMMAND_REGEX: Regex = Regex::new(r"^!set +(.*)$").unwrap();
         }
 
         if command == "!abilities" {
@@ -59,6 +61,13 @@ impl Command {
                     )
                     .unwrap_or_else(identity),
             )
+        } else if let Some(captures) = SET_COMMAND_REGEX.captures(&command) {
+            let set_command = captures.get(1).map_or("", |m| m.as_str()).to_string();
+            Some(
+                CharacterAttribute::parse(&set_command)
+                    .map(|attribute| Command::Set { attribute })
+                    .unwrap_or(Command::Error { message: "Invalid set command.".to_string() })
+            )
         } else {
             None
         }
@@ -79,6 +88,7 @@ impl Handler {
             Command::Help => Handler::get_help_response(author_id),
             Command::Increment => self.get_increment_response(channel_id, author_id),
             Command::Roll { roll } => Handler::get_roll_response(roll, author_id),
+            Command::Set { attribute } => self.get_set_response(&attribute, channel_id, author_id),
             Command::CharacterRoll { roll } => self.get_character_roll_response(&roll, channel_id, author_id),
             Command::ShowAbilities => self.get_show_abilities_response(channel_id, author_id),
         })
@@ -152,6 +162,28 @@ impl Handler {
         let mut rng = rand::thread_rng();
         let result = roll.roll(&mut rng);
         format!("🎲 <@{}> rolled {} = {}", author_id, roll, result)
+    }
+
+    fn get_set_response(&self, attribute: &CharacterAttribute, channel_id: &ChannelId, author_id: &UserId) -> String {
+        self.pool
+            .get()
+            .map_err(|_| {
+                format!(
+                    "<@{}> Error obtaining connection from connection pool.",
+                    author_id
+                )
+            })
+            .and_then(|connection| {
+                Character::set_attribute(&connection, channel_id, author_id, attribute)
+                    .map_err(|_| format!("<@{}> Error updating character.", author_id))
+            })
+            .map(|_| {
+                format!(
+                    "<@{}> Updated character successfully.",
+                    author_id,
+                )
+            })
+            .unwrap_or_else(|error| error)
     }
 
     fn get_show_abilities_response(&self, channel_id: &ChannelId, author_id: &UserId) -> String {

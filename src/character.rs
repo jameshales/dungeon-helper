@@ -1,3 +1,4 @@
+use regex::Regex;
 use rusqlite::types::{FromSql, FromSqlError, FromSqlResult, ToSql, ToSqlOutput, ValueRef};
 use rusqlite::Result as RusqliteResult;
 use rusqlite::{Connection, Row};
@@ -196,6 +197,32 @@ impl Character {
         )
     }
 
+    pub fn set_level(
+        connection: &Connection,
+        channel_id: &ChannelId,
+        user_id: &UserId,
+        level: i32
+    ) -> RusqliteResult<usize> {
+        let params: &[&dyn ToSql] = &[&level, &channel_id.to_string(), &user_id.to_string()];
+        connection.execute(
+            "UPDATE characters SET level = $1 WHERE channel_id = $2 AND user_id = $3",
+            params
+        )
+    }
+
+    pub fn set_jack_of_all_trades(
+        connection: &Connection,
+        channel_id: &ChannelId,
+        user_id: &UserId,
+        jack_of_all_trades: bool
+    ) -> RusqliteResult<usize> {
+        let params: &[&dyn ToSql] = &[&jack_of_all_trades, &channel_id.to_string(), &user_id.to_string()];
+        connection.execute(
+            "UPDATE characters SET jack_of_all_trades = $1 WHERE channel_id = $2 AND user_id = $3",
+            params
+        )
+    }
+
     fn proficiency_bonus(&self) -> Option<i32> {
         self.level.map(|level| level / 4 + 2)
     }
@@ -242,6 +269,20 @@ impl Character {
             AbilityName::Wisdom => self.wisdom(),
             AbilityName::Charisma => self.charisma(),
         }
+    }
+
+    pub fn set_ability(
+        connection: &Connection,
+        channel_id: &ChannelId,
+        user_id: &UserId,
+        name: &AbilityName,
+        score: i32
+    ) -> RusqliteResult<usize> {
+        let params: &[&dyn ToSql] = &[&score, &channel_id.to_string(), &user_id.to_string()];
+        connection.execute(
+            format!("UPDATE characters SET {} = $1 WHERE channel_id = $2 AND user_id = $3", name.as_column_name()).as_ref(),
+            params
+        )
     }
 
     // Saving Throws
@@ -295,6 +336,20 @@ impl Character {
             AbilityName::Wisdom => self.wisdom_saving_throw(),
             AbilityName::Charisma => self.charisma_saving_throw(),
         }
+    }
+
+    pub fn set_saving_throw(
+        connection: &Connection,
+        channel_id: &ChannelId,
+        user_id: &UserId,
+        name: &AbilityName,
+        proficiency: bool
+    ) -> RusqliteResult<usize> {
+        let params: &[&dyn ToSql] = &[&proficiency, &channel_id.to_string(), &user_id.to_string()];
+        connection.execute(
+            format!("UPDATE characters SET {}_saving_proficiency = $1 WHERE channel_id = $2 AND user_id = $3", name.as_column_name()).as_ref(),
+            params
+        )
     }
 
     // Skills
@@ -407,6 +462,35 @@ impl Character {
             SkillName::Survival => self.survival(),
         }
     }
+
+    pub fn set_skill(
+        connection: &Connection,
+        channel_id: &ChannelId,
+        user_id: &UserId,
+        name: &SkillName,
+        proficiency: &Proficiency
+    ) -> RusqliteResult<usize> {
+        let params: &[&dyn ToSql] = &[&proficiency, &channel_id.to_string(), &user_id.to_string()];
+        connection.execute(
+            format!("UPDATE characters SET {}_proficiency = $1 WHERE channel_id = $2 AND user_id = $3", name.as_column_name()).as_ref(),
+            params
+        )
+    }
+
+    pub fn set_attribute(
+        connection: &Connection,
+        channel_id: &ChannelId,
+        user_id: &UserId,
+        attribute: &CharacterAttribute
+    ) -> RusqliteResult<usize> {
+        match attribute {
+            CharacterAttribute::Ability(name, score) => Character::set_ability(connection, channel_id, user_id, name, *score),
+            CharacterAttribute::Level(level) => Character::set_level(connection, channel_id, user_id, *level),
+            CharacterAttribute::JackOfAllTrades(jack_of_all_trades) => Character::set_jack_of_all_trades(connection, channel_id, user_id, *jack_of_all_trades),
+            CharacterAttribute::SavingThrowProficiency(name, proficiency) => Character::set_saving_throw(connection, channel_id, user_id, name, *proficiency),
+            CharacterAttribute::SkillProficiency(name, proficiency) => Character::set_skill(connection, channel_id, user_id, name, proficiency),
+        }
+    }
 }
 
 pub struct Ability {
@@ -455,6 +539,17 @@ impl AbilityName {
             AbilityName::Intelligence => "Intelligence",
             AbilityName::Wisdom => "Wisdom",
             AbilityName::Charisma => "Charisma",
+        }
+    }
+
+    pub fn as_column_name(&self) -> &str {
+        match self {
+            AbilityName::Strength => "strength",
+            AbilityName::Dexterity => "dexterity",
+            AbilityName::Constitution => "constitution",
+            AbilityName::Intelligence => "intelligence",
+            AbilityName::Wisdom => "wisdom",
+            AbilityName::Charisma => "charisma",
         }
     }
 }
@@ -527,5 +622,122 @@ impl SkillName {
             SkillName::Stealth => "Stealth",
             SkillName::Survival => "Survival",
         }
+    }
+
+    pub fn as_column_name(&self) -> &str {
+        match self {
+            SkillName::Acrobatics => "acrobatics",
+            SkillName::AnimalHandling => "animal_handling",
+            SkillName::Arcana => "arcana",
+            SkillName::Athletics => "athletics",
+            SkillName::Deception => "deception",
+            SkillName::History => "history",
+            SkillName::Insight => "insight",
+            SkillName::Intimidation => "intimidation",
+            SkillName::Investigation => "investigation",
+            SkillName::Medicine => "medicine",
+            SkillName::Nature => "nature",
+            SkillName::Perception => "perception",
+            SkillName::Performance => "performance",
+            SkillName::Persuasion => "persuasion",
+            SkillName::Religion => "religion",
+            SkillName::SleightOfHand => "sleight_of_hand",
+            SkillName::Stealth => "stealth",
+            SkillName::Survival => "survival",
+        }
+    }
+}
+
+#[derive(Debug, Eq, PartialEq)]
+pub enum CharacterAttribute {
+    Ability(AbilityName, i32),
+    Level(i32),
+    JackOfAllTrades(bool),
+    SavingThrowProficiency(AbilityName, bool),
+    SkillProficiency(SkillName, Proficiency),
+}
+
+impl CharacterAttribute {
+    pub fn parse(string: &str) -> Option<CharacterAttribute> {
+        lazy_static! {
+            static ref ABILITY_REGEX: Regex = Regex::new(r"^(.*?) (\d+)$").unwrap();
+            static ref LEVEL_REGEX: Regex = Regex::new(r"^level (\d+)$").unwrap();
+            static ref JACK_OF_ALL_TRADES_REGEX: Regex = Regex::new(r"^(not )?jack of all trades$").unwrap();
+            static ref SAVING_THROW_REGEX: Regex = Regex::new(r"^(.*?) saving throw (normal|proficient)$").unwrap();
+            static ref SKILL_REGEX: Regex = Regex::new(r"^(.*?) (normal|proficient|expert)$").unwrap();
+        }
+        if let Some(captures) = LEVEL_REGEX.captures(string) {
+            let level = captures.get(1)?.as_str().parse().ok()?;
+            Some(CharacterAttribute::Level(level))
+        } else if let Some(captures) = ABILITY_REGEX.captures(string) {
+            let name = AbilityName::parse(captures.get(1)?.as_str())?;
+            let score = captures.get(2)?.as_str().parse().ok()?;
+            Some(CharacterAttribute::Ability(name, score))
+        } else if let Some(captures) = JACK_OF_ALL_TRADES_REGEX.captures(string) {
+            let jack_of_all_trades = captures.get(1).map(|m| m.as_str()) != Some("not ");
+            Some(CharacterAttribute::JackOfAllTrades(jack_of_all_trades))
+        } else if let Some(captures) = SAVING_THROW_REGEX.captures(string) {
+            let name = AbilityName::parse(captures.get(1)?.as_str())?;
+            let proficiency = captures.get(2)?.as_str() == "proficient";
+            Some(CharacterAttribute::SavingThrowProficiency(name, proficiency))
+        } else if let Some(captures) = SKILL_REGEX.captures(string) {
+            let name = SkillName::parse(captures.get(1)?.as_str())?;
+            let proficiency = match captures.get(2)?.as_str() {
+                "normal" => Some(Proficiency::Normal),
+                "proficient" => Some(Proficiency::Proficient),
+                "expert" => Some(Proficiency::Expert),
+                _ => None
+            }?;
+            Some(CharacterAttribute::SkillProficiency(name, proficiency))
+        } else {
+            None
+        }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_attribute_parse_ability() {
+        let expected = Some(CharacterAttribute::Ability(AbilityName::Strength, 3));
+        let actual = CharacterAttribute::parse("strength 3");
+        assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn test_attribute_parse_level() {
+        let expected = Some(CharacterAttribute::Level(5));
+        let actual = CharacterAttribute::parse("level 5");
+        assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn test_attribute_parse_jack_of_all_trades() {
+        let expected = Some(CharacterAttribute::JackOfAllTrades(true));
+        let actual = CharacterAttribute::parse("jack of all trades");
+        assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn test_attribute_parse_not_jack_of_all_trades() {
+        let expected = Some(CharacterAttribute::JackOfAllTrades(false));
+        let actual = CharacterAttribute::parse("not jack of all trades");
+        assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn test_attribute_parse_saving_throw_proficient() {
+        let expected = Some(CharacterAttribute::SavingThrowProficiency(AbilityName::Strength, true));
+        let actual = CharacterAttribute::parse("strength saving throw proficient");
+        assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn test_attribute_parse_saving_throw_normal() {
+        let expected = Some(CharacterAttribute::SavingThrowProficiency(AbilityName::Strength, false));
+        let actual = CharacterAttribute::parse("strength saving throw normal");
+        assert_eq!(actual, expected);
     }
 }
