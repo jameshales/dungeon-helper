@@ -11,7 +11,7 @@ use roll::Roll;
 use std::env;
 
 use serenity::{
-    model::{channel::Message, gateway::Ready, user::User},
+    model::{channel::Message, gateway::Ready, id::{ChannelId, UserId}},
     prelude::*,
 };
 
@@ -49,46 +49,64 @@ struct Handler {
 
 impl Handler {
     fn get_response(&self, msg: &Message) -> Option<String> {
+        let author_id = &msg.author.id;
+
         Command::parse(&msg.content).map(|command|
             match command {
-                Command::Error { message } => Handler::get_error_response(&message, &msg.author),
-                Command::Help => Handler::get_help_response(&msg.author),
-                Command::Increment => self.get_increment_response(&msg.author),
-                Command::Roll { roll } => Handler::get_roll_response(roll, &msg.author),
+                Command::Error { message } => Handler::get_error_response(&message, author_id),
+                Command::Help => Handler::get_help_response(author_id),
+                Command::Increment => self.get_increment_response(&msg.channel_id, author_id),
+                Command::Roll { roll } => Handler::get_roll_response(roll, author_id),
             }
         )
     }
 
-    fn get_error_response(message: &str, author: &User) -> String {
+    fn get_error_response(message: &str, author_id: &UserId) -> String {
         format!(
             "<@{}> **Error:** {} Type `!help` for help.",
-            author.id,
+            author_id,
             message
         )
     }
 
-    fn get_help_response(author: &User) -> String {
-        format!("<@{}> **Usage:** `!roll [n]d[n] [ [+|-] n] [with [advantage|disadvantage]]`.\n**Examples:** `!roll 1d20`, `!roll 2d8 + 3`, `!roll 3d4 - 2 with advantage`.", author.id)
+    fn get_help_response(author_id: &UserId) -> String {
+        format!("<@{}> **Usage:** `!roll [n]d[n] [ [+|-] n] [with [advantage|disadvantage]]`.\n**Examples:** `!roll 1d20`, `!roll 2d8 + 3`, `!roll 3d4 - 2 with advantage`.", author_id)
     }
 
-    fn get_increment_response(&self, author: &User) -> String {
+    fn get_increment_response(&self, channel_id: &ChannelId, author_id: &UserId) -> String {
         self.pool.get()
-            .map_err(|_| format!("<@{}> Error obtaining connection from connection pool.", author.id))
+            .map_err(|_| format!("<@{}> Error obtaining connection from connection pool.", author_id))
             .and_then(|connection|
                 connection.execute(
-                    "INSERT INTO counters (user_id, counter) VALUES ($1, 0) ON CONFLICT (user_id) DO UPDATE SET counter = counter + 1 WHERE user_id = $1",
-                    &[&author.id.to_string()]
+                    "INSERT INTO counters (channel_id, user_id, counter) VALUES ($1, $2, 0) ON CONFLICT (channel_id, user_id) DO UPDATE SET counter = counter + 1 WHERE channel_id = $1 AND user_id = $2",
+                    &[
+                        &channel_id.to_string(),
+                        &author_id.to_string()
+                    ]
                 )
-                .map(|_| format!("<@{}> Incremented!", author.id))
-                .map_err(|_| format!("<@{}> Error incrementing counter.", author.id))
+                .map_err(|_| format!("<@{}> Error incrementing counter.", author_id))
+                .and(
+                    connection.query_row(
+                        "SELECT counter FROM counters WHERE channel_id = $1 AND user_id = $2",
+                        &[
+                            &channel_id.to_string(),
+                            &author_id.to_string()
+                        ],
+                        |row| {
+                            row.get::<_, i32>(0)
+                        }
+                    )
+                    .map_err(|_| format!("<@{}> Error retrieving updated counter.", author_id))
+                )
             )
+            .map(|counter| format!("<@{}> incremented counter to {}", author_id, counter))
             .unwrap_or_else(|error| error)
     }
 
-    fn get_roll_response(roll: Roll, author: &User) -> String {
+    fn get_roll_response(roll: Roll, author_id: &UserId) -> String {
         let mut rng = rand::thread_rng();
         let result = roll.roll(&mut rng);
-        format!("🎲 <@{}> rolled {} = {}", author.id, roll, result)
+        format!("🎲 <@{}> rolled {} = {}", author_id, roll, result)
     }
 }
 
