@@ -123,7 +123,7 @@ impl Roll {
                 let negative_modifier = captures
                     .get(3)
                     .map(|m| m.as_str())
-                    .contains(&"-".to_string());
+                    .map_or(false, |v| v == "-");
                 let modifier = captures
                     .get(4)
                     .and_then(|m| m.as_str().parse::<i32>().ok())
