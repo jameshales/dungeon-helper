@@ -2,24 +2,35 @@
 #[macro_use]
 extern crate lazy_static;
 
+mod character;
+mod character_roll;
 mod roll;
 
+use character::{Ability, Character};
+use character_roll::CharacterRoll;
 use r2d2::Pool;
 use r2d2_sqlite::SqliteConnectionManager;
 use regex::Regex;
 use roll::Roll;
+use std::convert::identity;
 use std::env;
 
 use serenity::{
-    model::{channel::Message, gateway::Ready, id::{ChannelId, UserId}},
+    model::{
+        channel::Message,
+        gateway::Ready,
+        id::{ChannelId, UserId},
+    },
     prelude::*,
 };
 
 enum Command {
     Error { message: String },
+    CharacterRoll { roll: CharacterRoll },
     Help,
     Increment,
     Roll { roll: Roll },
+    ShowAbilities,
 }
 
 impl Command {
@@ -28,15 +39,27 @@ impl Command {
             static ref ROLL_COMMAND_REGEX: Regex = Regex::new(r"^!(?:r|roll) +(.*)$").unwrap();
         }
 
-        if command == "!help" {
+        if command == "!abilities" {
+            Some(Command::ShowAbilities)
+        } else if command == "!help" {
             Some(Command::Help)
         } else if command == "!increment" {
             Some(Command::Increment)
         } else if let Some(captures) = ROLL_COMMAND_REGEX.captures(&command) {
             let roll_command = captures.get(1).map_or("", |m| m.as_str()).to_string();
-            Some(Roll::parse(&roll_command)
-                .map(|roll| Command::Roll { roll })
-                .unwrap_or_else(|error| Command::Error { message: error.message().to_string() }))
+            Some(
+                Roll::parse(&roll_command)
+                    .map(|roll| Command::Roll { roll })
+                    .map_err(|error| Command::Error {
+                        message: error.message().to_string(),
+                    })
+                    .or(
+                        CharacterRoll::parse(&roll_command)
+                            .map(|roll| Command::CharacterRoll { roll })
+                            .ok_or(Command::Error { message: "Invalid character roll?".to_string() })
+                    )
+                    .unwrap_or_else(identity),
+            )
         } else {
             None
         }
@@ -50,22 +73,45 @@ struct Handler {
 impl Handler {
     fn get_response(&self, msg: &Message) -> Option<String> {
         let author_id = &msg.author.id;
+        let channel_id = &msg.channel_id;
 
-        Command::parse(&msg.content).map(|command|
-            match command {
-                Command::Error { message } => Handler::get_error_response(&message, author_id),
-                Command::Help => Handler::get_help_response(author_id),
-                Command::Increment => self.get_increment_response(&msg.channel_id, author_id),
-                Command::Roll { roll } => Handler::get_roll_response(roll, author_id),
-            }
-        )
+        Command::parse(&msg.content).map(|command| match command {
+            Command::Error { message } => Handler::get_error_response(&message, author_id),
+            Command::Help => Handler::get_help_response(author_id),
+            Command::Increment => self.get_increment_response(channel_id, author_id),
+            Command::Roll { roll } => Handler::get_roll_response(roll, author_id),
+            Command::CharacterRoll { roll } => self.get_character_roll_response(&roll, channel_id, author_id),
+            Command::ShowAbilities => self.get_show_abilities_response(channel_id, author_id),
+        })
+    }
+
+    fn get_character_roll_response(&self, character_roll: &CharacterRoll, channel_id: &ChannelId, author_id: &UserId) -> String {
+        self.pool
+            .get()
+            .map_err(|_| {
+                format!(
+                    "<@{}> Error obtaining connection from connection pool.",
+                    author_id
+                )
+            })
+            .and_then(|connection| {
+                Character::get(&connection, channel_id, author_id)
+                    .map_err(|_| format!("<@{}> Error retrieving character.", author_id))
+            })
+            .and_then(|character|
+                character_roll.to_roll(&character).ok_or(format!("<@{}> Missing stats in character.", author_id))
+            ).map(|roll| {
+                let mut rng = rand::thread_rng();
+                let result = roll.roll(&mut rng);
+                format!("🎲 <@{}> rolled {} ({}) = {}", author_id, character_roll.check, roll, result)
+            })
+            .unwrap_or_else(|error| error)
     }
 
     fn get_error_response(message: &str, author_id: &UserId) -> String {
         format!(
             "<@{}> **Error:** {} Type `!help` for help.",
-            author_id,
-            message
+            author_id, message
         )
     }
 
@@ -108,6 +154,40 @@ impl Handler {
         let result = roll.roll(&mut rng);
         format!("🎲 <@{}> rolled {} = {}", author_id, roll, result)
     }
+
+    fn get_show_abilities_response(&self, channel_id: &ChannelId, author_id: &UserId) -> String {
+        self.pool
+            .get()
+            .map_err(|_| {
+                format!(
+                    "<@{}> Error obtaining connection from connection pool.",
+                    author_id
+                )
+            })
+            .and_then(|connection| {
+                Character::get(&connection, channel_id, author_id)
+                    .map_err(|_| format!("<@{}> Error retrieving character.", author_id))
+            })
+            .map(|character| {
+                format!(
+                    "<@{}> STR = {}, DEX = {}, CON = {}, INT = {}, WIS = {}, CHA = {}",
+                    author_id,
+                    Handler::format_ability(character.strength()),
+                    Handler::format_ability(character.dexterity()),
+                    Handler::format_ability(character.constitution()),
+                    Handler::format_ability(character.intelligence()),
+                    Handler::format_ability(character.wisdom()),
+                    Handler::format_ability(character.charisma()),
+                )
+            })
+            .unwrap_or_else(|error| error)
+    }
+
+    fn format_ability(ability: Option<Ability>) -> String {
+        ability.map_or("?".to_string(), |a| {
+            format!("{:+} ({})", a.modifier, a.score)
+        })
+    }
 }
 
 impl EventHandler for Handler {
@@ -133,9 +213,7 @@ fn main() {
 
     let pool = Pool::new(manager).expect("Error creating connection pool");
 
-    let handler = Handler {
-        pool: pool
-    };
+    let handler = Handler { pool: pool };
 
     let mut client = Client::new(&token, handler).expect("Error creating Discord client");
 

@@ -14,7 +14,7 @@ pub const MAXIMUM_SIDES: i32 = 100;
 ///
 /// A roll with advantage involves performing the roll twice and taking the highest result, whereas
 /// a roll with disadvantage involves performing the roll twice and taking the lowest result.
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum Condition {
     Advantage,
     Normal,
