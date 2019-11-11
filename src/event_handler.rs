@@ -29,15 +29,20 @@ impl Handler {
     fn get_response(&self, msg: &Message) -> Option<String> {
         let author_id = &msg.author.id;
         let channel_id = &msg.channel_id;
+        let content = &msg.content.trim();
 
-        let command = Command::parse_roll(&msg.content).or(self.parse_message(&msg.content));
+        let command = Command::parse_shorthand(content).or(self.parse_message(content));
 
         command.map(|command| match command {
             Command::CharacterRoll(roll) => {
                 self.get_character_roll_response(&roll, channel_id, author_id)
             }
+            Command::Clarification(message) => {
+                Handler::get_clarification_response(&message, author_id)
+            }
             Command::Error(message) => Handler::get_error_response(&message, author_id),
-            Command::Help => Handler::get_help_response(author_id),
+            Command::Help => self.get_help_response(author_id),
+            Command::HelpShorthand => self.get_help_shorthand_response(author_id),
             Command::Roll(roll) => Handler::get_roll_response(roll, author_id),
             Command::Set(attribute) => self.get_set_response(&attribute, channel_id, author_id),
             Command::Show(attribute) => self.get_show_response(&attribute, channel_id, author_id),
@@ -103,15 +108,45 @@ impl Handler {
             .unwrap_or_else(|error| error)
     }
 
+    fn get_clarification_response(message: &str, author_id: &UserId) -> String {
+        format!("📎 <@{}> {}", author_id, message)
+    }
+
     fn get_error_response(message: &str, author_id: &UserId) -> String {
         format!(
-            "<@{}> **Error:** {} Type `!help` for help.",
+            "⚠️<@{}> **Error:** {} Type `!help` for help.",
             author_id, message
         )
     }
 
-    fn get_help_response(author_id: &UserId) -> String {
-        format!("<@{}> **Usage:** `!roll [n]d[n] [ [+|-] n] [with [advantage|disadvantage]]`.\n**Examples:** `!roll 1d20`, `!roll 2d8 + 3`, `!roll 3d4 - 2 with advantage`.", author_id)
+    fn get_help_response(&self, author_id: &UserId) -> String {
+        format!(
+            "ℹ️ <@{0}> Try typing the following:\n\
+             • \"<@{1}> Roll three d8s\"\n\
+             • \"<@{1}> Throw two twelve-sided dice\"\n\
+             • \"<@{1}> Do a strength check with advantage\"\n\
+             • \"<@{1}> Perform a wisdom saving throw\"\n\
+             • \"<@{1}> Try a stealth roll with disadvantage\"\n\
+             • \"<@{1}> Roll for initiative\"\n\
+             There are also short-hand commands you can use. Type \"!help\" for more info.",
+            author_id,
+            self.bot_id
+        )
+    }
+
+    fn get_help_shorthand_response(&self, author_id: &UserId) -> String {
+        format!(
+            "ℹ️ <@{0}> Try typing the following:\n\
+             • \"!r 3d8\"\n\
+             • \"!r 2d12+3\"\n\
+             • \"!r strength with advantage\"\n\
+             • \"!r wisdom saving throw\"\n\
+             • \"!r stealth with disadvantage\"\n\
+             • \"!r initiative\"\n\
+             There are also natural language commands you can use. Type \"<@{1}> help\" for more info.",
+            author_id,
+            self.bot_id
+        )
     }
 
     fn get_roll_response(roll: Roll, author_id: &UserId) -> String {

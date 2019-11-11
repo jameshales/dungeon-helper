@@ -44,7 +44,7 @@ fn parse_roll_ability(slots: &Vec<Slot>) -> Command {
     let ability = extract_ability_slot(slots);
     let condition = extract_condition_slot(slots).unwrap_or(Condition::Normal);
     ability.map_or(
-        Command::Error(format!("📎 It looks like you're trying to roll an ability check, but I'm not sure which ability you want. Try \"Roll strength\", \"Dexterity check\", etc.")),
+        Command::Clarification(format!("It looks like you're trying to roll an ability check, but I'm not sure which ability you want. Try \"Roll strength\", \"Dexterity check\", etc.")),
         |ability| {
             let roll = CharacterRoll {
                 check: Check::Ability(ability),
@@ -60,7 +60,7 @@ fn parse_roll_dice(slots: &Vec<Slot>) -> Command {
     let rolls = extract_usize_slot_value(slots, "rolls").unwrap_or(1);
     let sides = extract_die_slot(slots);
     sides.map_or(
-        Command::Error(format!("📎 It looks like you're trying to roll some dice, but I'm not sure what kind of dice you want. Try \"Roll a d20\", \"Throw two four-sided dice\", etc.")),
+        Command::Clarification(format!("It looks like you're trying to roll some dice, but I'm not sure what kind of dice you want. Try \"Roll a d20\", \"Throw two four-sided dice\", etc.")),
         |sides| {
             let roll = Roll::new(rolls, sides, 0, condition).unwrap();
             Command::Roll(roll)
@@ -81,7 +81,7 @@ fn parse_roll_saving_throw(slots: &Vec<Slot>) -> Command {
     let ability = extract_ability_slot(slots);
     let condition = extract_condition_slot(slots).unwrap_or(Condition::Normal);
     ability.map_or(
-        Command::Error(format!("📎 It looks like you're trying to roll a saving throw, but I'm not sure what kind of saving throw you want. Try \"Roll strength saving throw\", \"Dexterity saving throw\", etc.")),
+        Command::Clarification(format!("It looks like you're trying to roll a saving throw, but I'm not sure what kind of saving throw you want. Try \"Roll strength saving throw\", \"Dexterity saving throw\", etc.")),
         |ability| {
             let roll = CharacterRoll {
                 check: Check::SavingThrow(ability),
@@ -96,7 +96,7 @@ fn parse_roll_skill(slots: &Vec<Slot>) -> Command {
     let condition = extract_condition_slot(slots).unwrap_or(Condition::Normal);
     let skill = extract_skill_slot(slots);
     skill.map_or(
-        Command::Error(format!("📎 It looks like you're trying to roll a skill check, but I'm not sure what skill you want. Try \"Roll stealth\", \"Athletics check\", etc.")),
+        Command::Clarification(format!("It looks like you're trying to roll a skill check, but I'm not sure what skill you want. Try \"Roll stealth\", \"Athletics check\", etc.")),
         |skill| {
             let roll = CharacterRoll {
                 check: Check::Skill(skill),
@@ -111,10 +111,10 @@ fn parse_set_ability(slots: &Vec<Slot>) -> Command {
     let ability = extract_ability_slot(slots);
     let score = extract_i32_slot_value(slots, "score");
     ability.map_or(
-        Command::Error(format!("📎 It looks like you're trying to set an ability score, but I'm not sure what ability you want to set. Try \"Set strength as 12\", \"Change dexterity to 14\", etc.")),
+        Command::Clarification(format!("It looks like you're trying to set an ability score, but I'm not sure what ability you want to set. Try \"Set strength as 12\", \"Change dexterity to 14\", etc.")),
         |ability| {
             score.map_or(
-                Command::Error(format!("📎 It looks like you're trying to set an ability score, but I'm not sure what score you want to set it to. Try \"Set strength as 12\", \"Change dexterity to 14\", etc.")),
+                Command::Clarification(format!("It looks like you're trying to set an ability score, but I'm not sure what score you want to set it to. Try \"Set strength as 12\", \"Change dexterity to 14\", etc.")),
                 |score| {
                     Command::Set(CharacterAttributeUpdate::Ability(ability, score))
                 }
@@ -126,7 +126,7 @@ fn parse_set_ability(slots: &Vec<Slot>) -> Command {
 fn parse_set_level(slots: &Vec<Slot>) -> Command {
     let level = extract_i32_slot_value(slots, "level");
     level.map_or(
-        Command::Error(format!("📎 It looks like you're trying to set your level, but I'm not sure what level you want to set it to. Try \"Set level as 3\", \"Change level to 5\", etc.")),
+        Command::Clarification(format!("It looks like you're trying to set your level, but I'm not sure what level you want to set it to. Try \"Set level as 3\", \"Change level to 5\", etc.")),
         |level| {
             Command::Set(CharacterAttributeUpdate::Level(level))
         }
@@ -137,10 +137,10 @@ fn parse_set_saving_throw(slots: &Vec<Slot>) -> Command {
     let ability = extract_ability_slot(slots);
     let proficiency = extract_proficiency_slot(slots);
     ability.map_or(
-        Command::Error(format!("📎 It looks like you're trying to set a saving throw proficiency, but I'm not sure what saving throw you want to set. Try \"Set strength saving throw to proficient\", \"Change dexterity saving throw to normal\", etc.")),
+        Command::Clarification(format!("It looks like you're trying to set a saving throw proficiency, but I'm not sure what saving throw you want to set. Try \"Set strength saving throw to proficient\", \"Change dexterity saving throw to normal\", etc.")),
         |ability| {
             proficiency.map_or(
-                Command::Error(format!("📎 It looks like you're trying to set a saving throw proficiency, but I'm not sure what proficiency you want to set it to. Try \"Set strength saving throw to proficient\", \"Change dexterity saving throw to normal\", etc.")),
+                Command::Clarification(format!("It looks like you're trying to set a saving throw proficiency, but I'm not sure what proficiency you want to set it to. Try \"Set strength saving throw to proficient\", \"Change dexterity saving throw to normal\", etc.")),
                 |proficiency| {
                     Command::Set(CharacterAttributeUpdate::SavingThrowProficiency(ability, proficiency != Proficiency::Normal))
                 }
@@ -153,10 +153,10 @@ fn parse_set_skill(slots: &Vec<Slot>) -> Command {
     let proficiency = extract_proficiency_slot(slots);
     let skill = extract_skill_slot(slots);
     skill.map_or(
-        Command::Error(format!("📎 It looks like you're trying to set a skill proficiency, but I'm not sure what skill you want to set. Try \"Set athletics to proficient\", \"Change stealth to expert\", \"Update nature to normal\" etc.")),
+        Command::Clarification(format!("It looks like you're trying to set a skill proficiency, but I'm not sure what skill you want to set. Try \"Set athletics to proficient\", \"Change stealth to expert\", \"Update nature to normal\" etc.")),
         |skill| {
             proficiency.map_or(
-                Command::Error(format!("📎 It looks like you're trying to set a skill proficiency, but I'm not sure what proficiency you want to set it to. Try \"Set athletics to proficient\", \"Change stealth to expert\", \"Update nature to normal\" etc.")),
+                Command::Clarification(format!("It looks like you're trying to set a skill proficiency, but I'm not sure what proficiency you want to set it to. Try \"Set athletics to proficient\", \"Change stealth to expert\", \"Update nature to normal\" etc.")),
                 |proficiency| {
                     Command::Set(CharacterAttributeUpdate::SkillProficiency(skill, proficiency))
                 }
@@ -168,7 +168,7 @@ fn parse_set_skill(slots: &Vec<Slot>) -> Command {
 fn parse_show_ability(slots: &Vec<Slot>) -> Command {
     let ability = extract_ability_slot(slots);
     ability.map_or(
-        Command::Error(format!("📎 It looks like you're trying to view an ability score, but I'm not sure what ability you want. Try \"Show strength\", \"Display dexterity\", etc.")),
+        Command::Clarification(format!("It looks like you're trying to view an ability score, but I'm not sure what ability you want. Try \"Show strength\", \"Display dexterity\", etc.")),
         |ability| {
             Command::Show(CharacterAttribute::Ability(ability))
         }
@@ -178,7 +178,7 @@ fn parse_show_ability(slots: &Vec<Slot>) -> Command {
 fn parse_show_passive_ability(slots: &Vec<Slot>) -> Command {
     let ability = extract_ability_slot(slots);
     ability.map_or(
-        Command::Error(format!("📎 It looks like you're trying to view a passive ability score, but I'm not sure what ability you want. Try \"Show passive strength\", \"Display passive dexterity\", etc.")),
+        Command::Clarification(format!("It looks like you're trying to view a passive ability score, but I'm not sure what ability you want. Try \"Show passive strength\", \"Display passive dexterity\", etc.")),
         |ability| {
             Command::Show(CharacterAttribute::PassiveAbility(ability))
         }
@@ -188,7 +188,7 @@ fn parse_show_passive_ability(slots: &Vec<Slot>) -> Command {
 fn parse_show_passive_skill(slots: &Vec<Slot>) -> Command {
     let skill = extract_skill_slot(slots);
     skill.map_or(
-        Command::Error(format!("📎 It looks like you're trying to view a passive skill score, but I'm not sure what skill you want. Try \"Show passive athletics\", \"Display passive stealth\", etc.")),
+        Command::Clarification(format!("It looks like you're trying to view a passive skill score, but I'm not sure what skill you want. Try \"Show passive athletics\", \"Display passive stealth\", etc.")),
         |skill| {
             Command::Show(CharacterAttribute::PassiveSkill(skill))
         }
@@ -198,7 +198,7 @@ fn parse_show_passive_skill(slots: &Vec<Slot>) -> Command {
 fn parse_show_saving_throw(slots: &Vec<Slot>) -> Command {
     let ability = extract_ability_slot(slots);
     ability.map_or(
-        Command::Error(format!("📎 It looks like you're trying to view a saving throw modifier, but I'm not sure what ability you want. Try \"Show strength saving throw\", \"Display passive saving throw\", etc.")),
+        Command::Clarification(format!("It looks like you're trying to view a saving throw modifier, but I'm not sure what ability you want. Try \"Show strength saving throw\", \"Display passive saving throw\", etc.")),
         |ability| {
             Command::Show(CharacterAttribute::SavingThrow(ability))
         }
@@ -208,7 +208,7 @@ fn parse_show_saving_throw(slots: &Vec<Slot>) -> Command {
 fn parse_show_skill(slots: &Vec<Slot>) -> Command {
     let skill = extract_skill_slot(slots);
     skill.map_or(
-        Command::Error(format!("📎 It looks like you're trying to view a skill modifier, but I'm not sure what skill you want. Try \"Show athletics\", \"Display stealth\", etc.")),
+        Command::Clarification(format!("It looks like you're trying to view a skill modifier, but I'm not sure what skill you want. Try \"Show athletics\", \"Display stealth\", etc.")),
         |skill| {
             Command::Show(CharacterAttribute::Skill(skill))
         }

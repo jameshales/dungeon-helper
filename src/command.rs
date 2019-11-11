@@ -5,9 +5,11 @@ use regex::Regex;
 use std::convert::identity;
 
 pub enum Command {
-    Error(String),
     CharacterRoll(crate::character_roll::CharacterRoll),
+    Clarification(String),
+    Error(String),
     Help,
+    HelpShorthand,
     Roll(crate::roll::Roll),
     Set(CharacterAttributeUpdate),
     Show(CharacterAttribute),
@@ -16,12 +18,14 @@ pub enum Command {
 }
 
 impl Command {
-    pub fn parse_roll(command: &str) -> Option<Command> {
+    pub fn parse_shorthand(command: &str) -> Option<Command> {
         lazy_static! {
             static ref ROLL_COMMAND_REGEX: Regex = Regex::new(r"^!(?:r|roll) +(.*)$").unwrap();
         }
 
-        if let Some(captures) = ROLL_COMMAND_REGEX.captures(&command) {
+        if command == "!help" {
+            Some(Command::HelpShorthand)
+        } else if let Some(captures) = ROLL_COMMAND_REGEX.captures(&command) {
             let roll_command = captures.get(1).map_or("", |m| m.as_str()).to_string();
             Some(
                 Roll::parse(&roll_command)

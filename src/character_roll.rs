@@ -51,6 +51,11 @@ impl Check {
         }
         AbilityName::parse(string)
             .map(Check::Ability)
+            .or(if string.to_lowercase() == "initiative" {
+                Some(Check::Initiative)
+            } else {
+                None
+            })
             .or(SkillName::parse(string).map(Check::Skill))
             .or(RE
                 .captures(string)
