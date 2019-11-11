@@ -30,7 +30,7 @@ impl Handler {
         let author_id = &msg.author.id;
         let channel_id = &msg.channel_id;
 
-        let command = Command::parse(&msg.content).or(self.parse_message(&msg.content));
+        let command = Command::parse_roll(&msg.content).or(self.parse_message(&msg.content));
 
         command.map(|command| match command {
             Command::CharacterRoll(roll) => {
