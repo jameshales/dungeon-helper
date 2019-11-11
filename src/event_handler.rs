@@ -121,7 +121,7 @@ impl Handler {
 
     fn get_help_response(&self, author_id: &UserId) -> String {
         format!(
-            "ℹ️ <@{0}> Try typing the following:\n\
+            "🎱 <@{0}> Try typing the following:\n\
              • \"<@{1}> Roll three d8s\"\n\
              • \"<@{1}> Throw two twelve-sided dice\"\n\
              • \"<@{1}> Do a strength check with advantage\"\n\
@@ -136,7 +136,7 @@ impl Handler {
 
     fn get_help_shorthand_response(&self, author_id: &UserId) -> String {
         format!(
-            "ℹ️ <@{0}> Try typing the following:\n\
+            "🎱 <@{0}> Try typing the following:\n\
              • \"!r 3d8\"\n\
              • \"!r 2d12+3\"\n\
              • \"!r strength with advantage\"\n\
