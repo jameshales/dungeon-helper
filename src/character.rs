@@ -15,10 +15,10 @@ pub enum Proficiency {
 
 impl Proficiency {
     pub fn parse(string: &str) -> Option<Proficiency> {
-        match string {
-            "Normal" => Some(Proficiency::Normal),
-            "Proficient" => Some(Proficiency::Proficient),
-            "Expert" => Some(Proficiency::Expert),
+        match string.to_lowercase().as_ref() {
+            "normal" => Some(Proficiency::Normal),
+            "proficient" => Some(Proficiency::Proficient),
+            "expert" => Some(Proficiency::Expert),
             _ => None,
         }
     }
@@ -197,29 +197,41 @@ impl Character {
         )
     }
 
+    pub fn level(&self) -> Option<i32> {
+        self.level
+    }
+
     pub fn set_level(
         connection: &Connection,
         channel_id: &ChannelId,
         user_id: &UserId,
-        level: i32
+        level: i32,
     ) -> RusqliteResult<usize> {
         let params: &[&dyn ToSql] = &[&level, &channel_id.to_string(), &user_id.to_string()];
         connection.execute(
             "UPDATE characters SET level = $1 WHERE channel_id = $2 AND user_id = $3",
-            params
+            params,
         )
+    }
+
+    pub fn jack_of_all_trades(&self) -> bool {
+        self.jack_of_all_trades
     }
 
     pub fn set_jack_of_all_trades(
         connection: &Connection,
         channel_id: &ChannelId,
         user_id: &UserId,
-        jack_of_all_trades: bool
+        jack_of_all_trades: bool,
     ) -> RusqliteResult<usize> {
-        let params: &[&dyn ToSql] = &[&jack_of_all_trades, &channel_id.to_string(), &user_id.to_string()];
+        let params: &[&dyn ToSql] = &[
+            &jack_of_all_trades,
+            &channel_id.to_string(),
+            &user_id.to_string(),
+        ];
         connection.execute(
             "UPDATE characters SET jack_of_all_trades = $1 WHERE channel_id = $2 AND user_id = $3",
-            params
+            params,
         )
     }
 
@@ -271,17 +283,25 @@ impl Character {
         }
     }
 
+    pub fn passive_ability(&self, name: AbilityName) -> Option<i32> {
+        self.ability(name).map(|a| 10 + a.modifier)
+    }
+
     pub fn set_ability(
         connection: &Connection,
         channel_id: &ChannelId,
         user_id: &UserId,
         name: &AbilityName,
-        score: i32
+        score: i32,
     ) -> RusqliteResult<usize> {
         let params: &[&dyn ToSql] = &[&score, &channel_id.to_string(), &user_id.to_string()];
         connection.execute(
-            format!("UPDATE characters SET {} = $1 WHERE channel_id = $2 AND user_id = $3", name.as_column_name()).as_ref(),
-            params
+            format!(
+                "UPDATE characters SET {} = $1 WHERE channel_id = $2 AND user_id = $3",
+                name.as_column_name()
+            )
+            .as_ref(),
+            params,
         )
     }
 
@@ -343,7 +363,7 @@ impl Character {
         channel_id: &ChannelId,
         user_id: &UserId,
         name: &AbilityName,
-        proficiency: bool
+        proficiency: bool,
     ) -> RusqliteResult<usize> {
         let params: &[&dyn ToSql] = &[&proficiency, &channel_id.to_string(), &user_id.to_string()];
         connection.execute(
@@ -463,17 +483,25 @@ impl Character {
         }
     }
 
+    pub fn passive_skill(&self, name: SkillName) -> Option<i32> {
+        self.skill(name).map(|s| 10 + s.modifier)
+    }
+
     pub fn set_skill(
         connection: &Connection,
         channel_id: &ChannelId,
         user_id: &UserId,
         name: &SkillName,
-        proficiency: &Proficiency
+        proficiency: &Proficiency,
     ) -> RusqliteResult<usize> {
         let params: &[&dyn ToSql] = &[&proficiency, &channel_id.to_string(), &user_id.to_string()];
         connection.execute(
-            format!("UPDATE characters SET {}_proficiency = $1 WHERE channel_id = $2 AND user_id = $3", name.as_column_name()).as_ref(),
-            params
+            format!(
+                "UPDATE characters SET {}_proficiency = $1 WHERE channel_id = $2 AND user_id = $3",
+                name.as_column_name()
+            )
+            .as_ref(),
+            params,
         )
     }
 
@@ -481,14 +509,29 @@ impl Character {
         connection: &Connection,
         channel_id: &ChannelId,
         user_id: &UserId,
-        attribute: &CharacterAttribute
+        attribute: &CharacterAttributeUpdate,
     ) -> RusqliteResult<usize> {
         match attribute {
-            CharacterAttribute::Ability(name, score) => Character::set_ability(connection, channel_id, user_id, name, *score),
-            CharacterAttribute::Level(level) => Character::set_level(connection, channel_id, user_id, *level),
-            CharacterAttribute::JackOfAllTrades(jack_of_all_trades) => Character::set_jack_of_all_trades(connection, channel_id, user_id, *jack_of_all_trades),
-            CharacterAttribute::SavingThrowProficiency(name, proficiency) => Character::set_saving_throw(connection, channel_id, user_id, name, *proficiency),
-            CharacterAttribute::SkillProficiency(name, proficiency) => Character::set_skill(connection, channel_id, user_id, name, proficiency),
+            CharacterAttributeUpdate::Ability(name, score) => {
+                Character::set_ability(connection, channel_id, user_id, name, *score)
+            }
+            CharacterAttributeUpdate::Level(level) => {
+                Character::set_level(connection, channel_id, user_id, *level)
+            }
+            CharacterAttributeUpdate::JackOfAllTrades(jack_of_all_trades) => {
+                Character::set_jack_of_all_trades(
+                    connection,
+                    channel_id,
+                    user_id,
+                    *jack_of_all_trades,
+                )
+            }
+            CharacterAttributeUpdate::SavingThrowProficiency(name, proficiency) => {
+                Character::set_saving_throw(connection, channel_id, user_id, name, *proficiency)
+            }
+            CharacterAttributeUpdate::SkillProficiency(name, proficiency) => {
+                Character::set_skill(connection, channel_id, user_id, name, proficiency)
+            }
         }
     }
 }
@@ -650,6 +693,18 @@ impl SkillName {
 
 #[derive(Debug, Eq, PartialEq)]
 pub enum CharacterAttribute {
+    Ability(AbilityName),
+    Initiative,
+    Level,
+    JackOfAllTrades,
+    PassiveAbility(AbilityName),
+    PassiveSkill(SkillName),
+    SavingThrow(AbilityName),
+    Skill(SkillName),
+}
+
+#[derive(Debug, Eq, PartialEq)]
+pub enum CharacterAttributeUpdate {
     Ability(AbilityName, i32),
     Level(i32),
     JackOfAllTrades(bool),
@@ -657,38 +712,49 @@ pub enum CharacterAttribute {
     SkillProficiency(SkillName, Proficiency),
 }
 
-impl CharacterAttribute {
-    pub fn parse(string: &str) -> Option<CharacterAttribute> {
+impl CharacterAttributeUpdate {
+    pub fn parse(string: &str) -> Option<CharacterAttributeUpdate> {
         lazy_static! {
             static ref ABILITY_REGEX: Regex = Regex::new(r"^(.*?) (\d+)$").unwrap();
             static ref LEVEL_REGEX: Regex = Regex::new(r"^level (\d+)$").unwrap();
-            static ref JACK_OF_ALL_TRADES_REGEX: Regex = Regex::new(r"^(not )?jack of all trades$").unwrap();
-            static ref SAVING_THROW_REGEX: Regex = Regex::new(r"^(.*?) saving throw (normal|proficient)$").unwrap();
-            static ref SKILL_REGEX: Regex = Regex::new(r"^(.*?) (normal|proficient|expert)$").unwrap();
+            static ref JACK_OF_ALL_TRADES_REGEX: Regex =
+                Regex::new(r"^(not )?jack of all trades$").unwrap();
+            static ref SAVING_THROW_REGEX: Regex =
+                Regex::new(r"^(.*?) saving throw (normal|proficient)$").unwrap();
+            static ref SKILL_REGEX: Regex =
+                Regex::new(r"^(.*?) (normal|proficient|expert)$").unwrap();
         }
         if let Some(captures) = LEVEL_REGEX.captures(string) {
             let level = captures.get(1)?.as_str().parse().ok()?;
-            Some(CharacterAttribute::Level(level))
+            Some(CharacterAttributeUpdate::Level(level))
         } else if let Some(captures) = ABILITY_REGEX.captures(string) {
             let name = AbilityName::parse(captures.get(1)?.as_str())?;
             let score = captures.get(2)?.as_str().parse().ok()?;
-            Some(CharacterAttribute::Ability(name, score))
+            Some(CharacterAttributeUpdate::Ability(name, score))
         } else if let Some(captures) = JACK_OF_ALL_TRADES_REGEX.captures(string) {
             let jack_of_all_trades = captures.get(1).map(|m| m.as_str()) != Some("not ");
-            Some(CharacterAttribute::JackOfAllTrades(jack_of_all_trades))
+            Some(CharacterAttributeUpdate::JackOfAllTrades(
+                jack_of_all_trades,
+            ))
         } else if let Some(captures) = SAVING_THROW_REGEX.captures(string) {
             let name = AbilityName::parse(captures.get(1)?.as_str())?;
             let proficiency = captures.get(2)?.as_str() == "proficient";
-            Some(CharacterAttribute::SavingThrowProficiency(name, proficiency))
+            Some(CharacterAttributeUpdate::SavingThrowProficiency(
+                name,
+                proficiency,
+            ))
         } else if let Some(captures) = SKILL_REGEX.captures(string) {
             let name = SkillName::parse(captures.get(1)?.as_str())?;
             let proficiency = match captures.get(2)?.as_str() {
                 "normal" => Some(Proficiency::Normal),
                 "proficient" => Some(Proficiency::Proficient),
                 "expert" => Some(Proficiency::Expert),
-                _ => None
+                _ => None,
             }?;
-            Some(CharacterAttribute::SkillProficiency(name, proficiency))
+            Some(CharacterAttributeUpdate::SkillProficiency(
+                name,
+                proficiency,
+            ))
         } else {
             None
         }
@@ -701,43 +767,49 @@ mod test {
 
     #[test]
     fn test_attribute_parse_ability() {
-        let expected = Some(CharacterAttribute::Ability(AbilityName::Strength, 3));
-        let actual = CharacterAttribute::parse("strength 3");
+        let expected = Some(CharacterAttributeUpdate::Ability(AbilityName::Strength, 3));
+        let actual = CharacterAttributeUpdate::parse("strength 3");
         assert_eq!(actual, expected);
     }
 
     #[test]
     fn test_attribute_parse_level() {
-        let expected = Some(CharacterAttribute::Level(5));
-        let actual = CharacterAttribute::parse("level 5");
+        let expected = Some(CharacterAttributeUpdate::Level(5));
+        let actual = CharacterAttributeUpdate::parse("level 5");
         assert_eq!(actual, expected);
     }
 
     #[test]
     fn test_attribute_parse_jack_of_all_trades() {
-        let expected = Some(CharacterAttribute::JackOfAllTrades(true));
-        let actual = CharacterAttribute::parse("jack of all trades");
+        let expected = Some(CharacterAttributeUpdate::JackOfAllTrades(true));
+        let actual = CharacterAttributeUpdate::parse("jack of all trades");
         assert_eq!(actual, expected);
     }
 
     #[test]
     fn test_attribute_parse_not_jack_of_all_trades() {
-        let expected = Some(CharacterAttribute::JackOfAllTrades(false));
-        let actual = CharacterAttribute::parse("not jack of all trades");
+        let expected = Some(CharacterAttributeUpdate::JackOfAllTrades(false));
+        let actual = CharacterAttributeUpdate::parse("not jack of all trades");
         assert_eq!(actual, expected);
     }
 
     #[test]
     fn test_attribute_parse_saving_throw_proficient() {
-        let expected = Some(CharacterAttribute::SavingThrowProficiency(AbilityName::Strength, true));
-        let actual = CharacterAttribute::parse("strength saving throw proficient");
+        let expected = Some(CharacterAttributeUpdate::SavingThrowProficiency(
+            AbilityName::Strength,
+            true,
+        ));
+        let actual = CharacterAttributeUpdate::parse("strength saving throw proficient");
         assert_eq!(actual, expected);
     }
 
     #[test]
     fn test_attribute_parse_saving_throw_normal() {
-        let expected = Some(CharacterAttribute::SavingThrowProficiency(AbilityName::Strength, false));
-        let actual = CharacterAttribute::parse("strength saving throw normal");
+        let expected = Some(CharacterAttributeUpdate::SavingThrowProficiency(
+            AbilityName::Strength,
+            false,
+        ));
+        let actual = CharacterAttributeUpdate::parse("strength saving throw normal");
         assert_eq!(actual, expected);
     }
 }

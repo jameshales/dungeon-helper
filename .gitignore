@@ -11,3 +11,6 @@ Cargo.lock
 
 # SQLite database
 dungeon-helper.db
+
+# Snips NLP model
+/model/
