@@ -1,6 +1,6 @@
 use rusqlite::types::{FromSql, FromSqlError, FromSqlResult, ToSql, ToSqlOutput, ValueRef};
 use rusqlite::Result as RusqliteResult;
-use rusqlite::{Connection, Row};
+use rusqlite::{Connection, Row, Transaction};
 use serenity::model::id::{ChannelId, UserId};
 use std::error;
 use std::fmt;
@@ -201,13 +201,13 @@ impl Character {
     }
 
     pub fn set_level(
-        connection: &Connection,
+        transaction: &Transaction,
         channel_id: &ChannelId,
         user_id: &UserId,
         level: i32,
     ) -> RusqliteResult<usize> {
         let params: &[&dyn ToSql] = &[&level, &channel_id.to_string(), &user_id.to_string()];
-        connection.execute(
+        transaction.execute(
             "UPDATE characters SET level = $1 WHERE channel_id = $2 AND user_id = $3",
             params,
         )
@@ -218,7 +218,7 @@ impl Character {
     }
 
     pub fn set_jack_of_all_trades(
-        connection: &Connection,
+        transaction: &Transaction,
         channel_id: &ChannelId,
         user_id: &UserId,
         jack_of_all_trades: bool,
@@ -228,7 +228,7 @@ impl Character {
             &channel_id.to_string(),
             &user_id.to_string(),
         ];
-        connection.execute(
+        transaction.execute(
             "UPDATE characters SET jack_of_all_trades = $1 WHERE channel_id = $2 AND user_id = $3",
             params,
         )
@@ -287,14 +287,14 @@ impl Character {
     }
 
     pub fn set_ability(
-        connection: &Connection,
+        transaction: &Transaction,
         channel_id: &ChannelId,
         user_id: &UserId,
         name: &AbilityName,
         score: i32,
     ) -> RusqliteResult<usize> {
         let params: &[&dyn ToSql] = &[&score, &channel_id.to_string(), &user_id.to_string()];
-        connection.execute(
+        transaction.execute(
             format!(
                 "UPDATE characters SET {} = $1 WHERE channel_id = $2 AND user_id = $3",
                 name.as_column_name()
@@ -358,14 +358,14 @@ impl Character {
     }
 
     pub fn set_saving_throw(
-        connection: &Connection,
+        transaction: &Transaction,
         channel_id: &ChannelId,
         user_id: &UserId,
         name: &AbilityName,
         proficiency: bool,
     ) -> RusqliteResult<usize> {
         let params: &[&dyn ToSql] = &[&proficiency, &channel_id.to_string(), &user_id.to_string()];
-        connection.execute(
+        transaction.execute(
             format!("UPDATE characters SET {}_saving_proficiency = $1 WHERE channel_id = $2 AND user_id = $3", name.as_column_name()).as_ref(),
             params
         )
@@ -487,14 +487,14 @@ impl Character {
     }
 
     pub fn set_skill(
-        connection: &Connection,
+        transaction: &Transaction,
         channel_id: &ChannelId,
         user_id: &UserId,
         name: &SkillName,
         proficiency: &Proficiency,
     ) -> RusqliteResult<usize> {
         let params: &[&dyn ToSql] = &[&proficiency, &channel_id.to_string(), &user_id.to_string()];
-        connection.execute(
+        transaction.execute(
             format!(
                 "UPDATE characters SET {}_proficiency = $1 WHERE channel_id = $2 AND user_id = $3",
                 name.as_column_name()
@@ -505,31 +505,61 @@ impl Character {
     }
 
     pub fn set_attribute(
-        connection: &Connection,
+        connection: &mut Connection,
+        channel_id: &ChannelId,
+        user_id: &UserId,
+        attribute: &CharacterAttributeUpdate,
+    ) -> RusqliteResult<()> {
+        connection.transaction().and_then(|transaction| {
+            Character::create_if_not_exists(&transaction, channel_id, user_id)
+                .and(Character::update_attribute(
+                    &transaction,
+                    channel_id,
+                    user_id,
+                    attribute,
+                ))
+                .and(transaction.commit())
+        })
+    }
+
+    fn create_if_not_exists(
+        transaction: &Transaction,
+        channel_id: &ChannelId,
+        user_id: &UserId,
+    ) -> RusqliteResult<usize> {
+        let params: &[&dyn ToSql] = &[&channel_id.to_string(), &user_id.to_string()];
+        transaction.execute(
+            "INSERT OR IGNORE INTO characters (channel_id, user_id) VALUES ($1, $2)",
+            params,
+        )
+    }
+
+    pub fn update_attribute(
+        transaction: &Transaction,
         channel_id: &ChannelId,
         user_id: &UserId,
         attribute: &CharacterAttributeUpdate,
     ) -> RusqliteResult<usize> {
         match attribute {
             CharacterAttributeUpdate::Ability(name, score) => {
-                Character::set_ability(connection, channel_id, user_id, name, *score)
+                Character::set_ability(transaction, channel_id, user_id, name, *score)
             }
             CharacterAttributeUpdate::Level(level) => {
-                Character::set_level(connection, channel_id, user_id, *level)
+                Character::set_level(transaction, channel_id, user_id, *level)
             }
             CharacterAttributeUpdate::JackOfAllTrades(jack_of_all_trades) => {
                 Character::set_jack_of_all_trades(
-                    connection,
+                    transaction,
                     channel_id,
                     user_id,
                     *jack_of_all_trades,
                 )
             }
             CharacterAttributeUpdate::SavingThrowProficiency(name, proficiency) => {
-                Character::set_saving_throw(connection, channel_id, user_id, name, *proficiency)
+                Character::set_saving_throw(transaction, channel_id, user_id, name, *proficiency)
             }
             CharacterAttributeUpdate::SkillProficiency(name, proficiency) => {
-                Character::set_skill(connection, channel_id, user_id, name, proficiency)
+                Character::set_skill(transaction, channel_id, user_id, name, proficiency)
             }
         }
     }

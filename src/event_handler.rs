@@ -129,8 +129,7 @@ impl Handler {
              • \"<@{1}> Try a stealth roll with disadvantage\"\n\
              • \"<@{1}> Roll for initiative\"\n\
              There are also short-hand commands you can use. Type \"!help\" for more info.",
-            author_id,
-            self.bot_id
+            author_id, self.bot_id
         )
     }
 
@@ -169,8 +168,8 @@ impl Handler {
                     author_id
                 )
             })
-            .and_then(|connection| {
-                Character::set_attribute(&connection, channel_id, author_id, attribute)
+            .and_then(|mut connection| {
+                Character::set_attribute(&mut connection, channel_id, author_id, attribute)
                     .map_err(|_| format!("<@{}> Error updating character.", author_id))
             })
             .map(|_| format!("<@{}> Updated character successfully.", author_id,))

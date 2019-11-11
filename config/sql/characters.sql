@@ -42,7 +42,9 @@ CREATE TABLE characters (
   religion_proficiency TEXT NOT NULL DEFAULT 'Normal',
   sleight_of_hand_proficiency TEXT NOT NULL DEFAULT 'Normal',
   stealth_proficiency TEXT NOT NULL DEFAULT 'Normal',
-  survival_proficiency TEXT NOT NULL DEFAULT 'Normal'
+  survival_proficiency TEXT NOT NULL DEFAULT 'Normal',
+
+  PRIMARY KEY (channel_id, user_id)
 );
 
 INSERT INTO characters (
