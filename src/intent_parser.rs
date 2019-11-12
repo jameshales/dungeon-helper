@@ -36,7 +36,9 @@ pub fn parse_intent_result(result: IntentParserResult) -> Option<Command> {
             "showSavingThrow" => parse_show_saving_throw(&slots),
             "showSkill" => parse_show_skill(&slots),
             "showSkills" => Command::ShowSkills,
-            _ => Command::Error("Unknown intent".to_string()),
+            _ => Command::Error(
+                "An unknown error occurred with understanding your request.".to_string(),
+            ),
         })
 }
 

@@ -19,11 +19,14 @@ use serenity::{
     prelude::*,
 };
 
-pub struct Handler {
-    pub bot_id: String,
-    pub engine: SnipsNluEngine,
-    pub pool: Pool<SqliteConnectionManager>,
-}
+const CHARACTER_NOT_FOUND_WARNING_TEXT: &str =
+    "Couldn't find any attributes for character. Try setting some ability scores and a character level first.";
+
+const ABILITY_NOT_SET_WARNING_TEXT: &str =
+    "Couldn't find required ability scores for character. Try setting some ability scores and a character level first.";
+
+const CONNECTION_ERROR_TEXT: &str =
+    "An unknown error occurred with obtaining a database connection.";
 
 enum Response {
     Clarification(String),
@@ -34,9 +37,6 @@ enum Response {
     Update(String),
     Warning(String),
 }
-
-const CONNECTION_ERROR_TEXT: &str =
-    "An unknown error occurred with obtaining a database connection.";
 
 impl Response {
     pub fn as_str(&self, author_id: &UserId) -> String {
@@ -50,6 +50,12 @@ impl Response {
             Response::Warning(message) => format!("⚠️ <@{}> {}", author_id, message),
         }
     }
+}
+
+pub struct Handler {
+    pub bot_id: String,
+    pub engine: SnipsNluEngine,
+    pub pool: Pool<SqliteConnectionManager>,
 }
 
 impl Handler {
@@ -95,7 +101,7 @@ impl Handler {
                 .map(|result| {
                     parse_intent_result(result).unwrap_or(Command::Clarification("I'm not sure what you mean. Try asking again with a different or simpler phrasing. Try asking for help to see some examples.".to_string()))
                 })
-                .unwrap_or(Command::Error("An unknown error has occurred with reading your message. Try again.".to_string()))
+                .unwrap_or(Command::Error("An unknown error has occurred with understanding your message. Try again.".to_string()))
         })
     }
 
@@ -107,17 +113,15 @@ impl Handler {
     ) -> Response {
         self.pool
             .get()
-            .map_err(|_| {
-                Response::Error("Error obtaining connection from connection pool.".to_string())
-            })
+            .map_err(|_| Response::Error(CONNECTION_ERROR_TEXT.to_string()))
             .and_then(|connection| {
                 Character::get(&connection, channel_id, author_id)
-                    .map_err(|_| Response::Warning("Couldn't find any attributes for character. Try setting some ability scores and a character level first.".to_string()))
+                    .map_err(|_| Response::Warning(CHARACTER_NOT_FOUND_WARNING_TEXT.to_string()))
             })
             .and_then(|character| {
                 character_roll
                     .to_roll(&character)
-                    .ok_or(Response::Warning("Couldn't find required ability scores for character. Try setting some ability scores and a character level first.".to_string()))
+                    .ok_or(Response::Warning(ABILITY_NOT_SET_WARNING_TEXT.to_string()))
             })
             .map(|roll| {
                 let mut rng = rand::thread_rng();
@@ -177,12 +181,12 @@ impl Handler {
                 Character::set_attribute(&mut connection, channel_id, author_id, attribute).map_err(
                     |_| {
                         Response::Error(
-                            "An unknown error occurred with updating character.".to_string(),
+                            "An unknown error occurred with updating your character.".to_string(),
                         )
                     },
                 )
             })
-            .map(|_| Response::Update("Updated character successfully.".to_string()))
+            .map(|_| Response::Update(format!("Set {}", attribute)))
             .unwrap_or_else(|error| error)
     }
 
@@ -194,16 +198,12 @@ impl Handler {
     ) -> Response {
         self.pool
             .get()
-            .map_err(|_| {
-                Response::Error("An unknown error has occurred with obtaining a database connection.".to_string())
-            })
+            .map_err(|_| Response::Error(CONNECTION_ERROR_TEXT.to_string()))
             .and_then(|connection| {
                 Character::get(&connection, channel_id, author_id)
-                    .map_err(|_| Response::Warning("Couldn't find any attributes for character. Try setting some ability scores and a character level first.".to_string()))
+                    .map_err(|_| Response::Warning(CHARACTER_NOT_FOUND_WARNING_TEXT.to_string()))
             })
-            .map(|character| {
-                Response::Show(Handler::show_attribute(&character, attribute))
-            })
+            .map(|character| Response::Show(Handler::show_attribute(&character, attribute)))
             .unwrap_or_else(|error| error)
     }
 
@@ -223,9 +223,9 @@ impl Handler {
             CharacterAttribute::JackOfAllTrades => format!(
                 "Jack of All Trades = {}",
                 if character.jack_of_all_trades() {
-                    "yes"
+                    "Yes"
                 } else {
-                    "no"
+                    "No"
                 }
             ),
             CharacterAttribute::Level => format!(

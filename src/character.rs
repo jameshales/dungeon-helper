@@ -740,3 +740,28 @@ pub enum CharacterAttributeUpdate {
     SavingThrowProficiency(AbilityName, bool),
     SkillProficiency(SkillName, Proficiency),
 }
+
+impl fmt::Display for CharacterAttributeUpdate {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            CharacterAttributeUpdate::Ability(ability, score) => {
+                write!(f, "{} score = {}", ability.as_str(), score)
+            }
+            CharacterAttributeUpdate::Level(level) => write!(f, "Level = {}", level),
+            CharacterAttributeUpdate::JackOfAllTrades(jack_of_all_trades) => write!(
+                f,
+                "Jack of all trades = {}",
+                if *jack_of_all_trades { "Yes" } else { "No" }
+            ),
+            CharacterAttributeUpdate::SavingThrowProficiency(ability, proficient) => write!(
+                f,
+                "{} saving throw = {}",
+                ability.as_str(),
+                if *proficient { "Proficient" } else { "Normal" }
+            ),
+            CharacterAttributeUpdate::SkillProficiency(skill, proficiency) => {
+                write!(f, "{} = {}", skill.as_str(), proficiency.as_str())
+            }
+        }
+    }
+}
