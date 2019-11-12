@@ -7,10 +7,11 @@ use crate::roll::{Condition, Error, Roll};
 use snips_nlu_ontology::{IntentParserResult, Slot, SlotValue};
 use std::convert::TryFrom;
 
-pub fn parse_intent_result(result: IntentParserResult) -> Option<Command> {
+pub fn parse_intent_result(result: &IntentParserResult) -> Option<Command> {
     let IntentParserResult { intent, slots, .. } = result;
     intent
         .intent_name
+        .as_ref()
         .map(|intent_name| match intent_name.as_ref() {
             "rollAbility" => parse_roll_ability(&slots),
             "rollDice" => parse_roll_dice(&slots),

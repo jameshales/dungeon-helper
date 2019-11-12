@@ -5,6 +5,7 @@ mod character;
 mod character_roll;
 mod command;
 mod event_handler;
+mod intent_logger;
 mod intent_parser;
 mod roll;
 

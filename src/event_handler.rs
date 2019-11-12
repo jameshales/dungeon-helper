@@ -3,12 +3,15 @@ use crate::character::{
 };
 use crate::character_roll::CharacterRoll;
 use crate::command::Command;
+use crate::intent_logger::log_intent_result;
 use crate::intent_parser::parse_intent_result;
 use crate::roll::Roll;
 use r2d2::Pool;
 use r2d2_sqlite::SqliteConnectionManager;
 use regex::Regex;
 use snips_nlu_lib::SnipsNluEngine;
+use snips_nlu_ontology::IntentParserResult;
+use std::convert::identity;
 
 use serenity::{
     model::{
@@ -58,15 +61,28 @@ pub struct Handler {
     pub pool: Pool<SqliteConnectionManager>,
 }
 
+enum MessageCommand {
+    Shorthand(Command),
+    NaturalLanguage(Command, Option<IntentParserResult>),
+}
+
 impl Handler {
-    fn get_response(&self, msg: &Message) -> Option<Response> {
-        let author_id = &msg.author.id;
-        let channel_id = &msg.channel_id;
-        let content = &msg.content.trim();
+    fn get_message_command(&self, message: &Message) -> Option<MessageCommand> {
+        let content = &message.content.trim();
+        Command::parse_shorthand(content)
+            .map(MessageCommand::Shorthand)
+            .or(self.parse_message(content).map(|(command, intent_result)| {
+                MessageCommand::NaturalLanguage(command, intent_result)
+            }))
+    }
 
-        let command = Command::parse_shorthand(content).or(self.parse_message(content));
-
-        command.map(|command| match command {
+    fn get_response(
+        &self,
+        command: Command,
+        channel_id: &ChannelId,
+        author_id: &UserId,
+    ) -> Response {
+        match command {
             Command::CharacterRoll(roll) => {
                 self.get_character_roll_response(&roll, channel_id, author_id)
             }
@@ -79,6 +95,22 @@ impl Handler {
             Command::Show(attribute) => self.get_show_response(&attribute, channel_id, author_id),
             Command::ShowAbilities => self.get_show_abilities_response(channel_id, author_id),
             Command::ShowSkills => self.get_show_skills_response(channel_id, author_id),
+        }
+    }
+
+    fn parse_message(&self, message: &str) -> Option<(Command, Option<IntentParserResult>)> {
+        self.extract_at_message(message).map(|at_message| {
+            self.engine.parse(at_message.trim(), None, None)
+                .map(
+                    |result| {
+                        let command = parse_intent_result(&result).map_or(
+                            Command::Clarification("I'm not sure what you mean. Try asking again with a different or simpler phrasing. Try asking for help to see some examples.".to_string()),
+                            identity
+                        );
+                        (command, Some(result))
+                    }
+                )
+                .unwrap_or((Command::Error("An unknown error has occurred with understanding your message. Try again.".to_string()), None))
         })
     }
 
@@ -94,15 +126,15 @@ impl Handler {
         })
     }
 
-    fn parse_message(&self, message: &str) -> Option<Command> {
-        self.extract_at_message(message).map(|at_message| {
-            let result = self.engine.parse(at_message.trim(), None, None);
-            result
-                .map(|result| {
-                    parse_intent_result(result).unwrap_or(Command::Clarification("I'm not sure what you mean. Try asking again with a different or simpler phrasing. Try asking for help to see some examples.".to_string()))
-                })
-                .unwrap_or(Command::Error("An unknown error has occurred with understanding your message. Try again.".to_string()))
-        })
+    fn log_intent_result(
+        &self,
+        message: &Message,
+        intent_result: &Option<IntentParserResult>,
+    ) -> () {
+        self.pool
+            .get()
+            .map(|mut connection| log_intent_result(&mut connection, message, intent_result))
+            .unwrap_or(())
     }
 
     fn get_character_roll_response(
@@ -367,19 +399,28 @@ impl Handler {
 }
 
 impl EventHandler for Handler {
-    fn message(&self, ctx: Context, msg: Message) {
+    fn message(&self, ctx: Context, message: Message) {
         // Don't respond to our own messages, this may cause an infinite loop
-        if !msg.is_own(&ctx.cache) {
-            let response = self.get_response(&msg);
+        if !message.is_own(&ctx.cache) {
+            let command =
+                self.get_message_command(&message)
+                    .map(|message_command| match message_command {
+                        MessageCommand::Shorthand(command) => command,
+                        MessageCommand::NaturalLanguage(command, intent_result) => {
+                            self.log_intent_result(&message, &intent_result);
+                            command
+                        }
+                    });
 
-            response.iter().for_each(|response| {
-                if let Err(why) = msg
+            command.map(|command| {
+                let response = self.get_response(command, &message.channel_id, &message.author.id);
+                if let Err(why) = message
                     .channel_id
-                    .say(&ctx.http, response.as_str(&msg.author.id))
+                    .say(&ctx.http, response.as_str(&message.author.id))
                 {
                     println!("Error sending message: {:?}", why);
                 }
-            })
+            });
         }
     }
 
