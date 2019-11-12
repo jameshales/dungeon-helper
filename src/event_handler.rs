@@ -25,8 +25,35 @@ pub struct Handler {
     pub pool: Pool<SqliteConnectionManager>,
 }
 
+enum Response {
+    Clarification(String),
+    DiceRoll(String),
+    Error(String),
+    Help(String),
+    Show(String),
+    Update(String),
+    Warning(String),
+}
+
+const CONNECTION_ERROR_TEXT: &str =
+    "An unknown error occurred with obtaining a database connection.";
+
+impl Response {
+    pub fn as_str(&self, author_id: &UserId) -> String {
+        match self {
+            Response::Clarification(message) => format!("📎 <@{}> {}", author_id, message),
+            Response::DiceRoll(message) => format!("🎲 <@{}> {}", author_id, message),
+            Response::Error(message) => format!("💥 <@{}> **Error:** {}", author_id, message),
+            Response::Help(message) => format!("🎱 <@{}> {}", author_id, message),
+            Response::Show(message) => format!("<@{}> {}", author_id, message),
+            Response::Update(message) => format!("💾 <@{}> {}", author_id, message),
+            Response::Warning(message) => format!("⚠️ <@{}> {}", author_id, message),
+        }
+    }
+}
+
 impl Handler {
-    fn get_response(&self, msg: &Message) -> Option<String> {
+    fn get_response(&self, msg: &Message) -> Option<Response> {
         let author_id = &msg.author.id;
         let channel_id = &msg.channel_id;
         let content = &msg.content.trim();
@@ -37,13 +64,11 @@ impl Handler {
             Command::CharacterRoll(roll) => {
                 self.get_character_roll_response(&roll, channel_id, author_id)
             }
-            Command::Clarification(message) => {
-                Handler::get_clarification_response(&message, author_id)
-            }
-            Command::Error(message) => Handler::get_error_response(&message, author_id),
-            Command::Help => self.get_help_response(author_id),
-            Command::HelpShorthand => self.get_help_shorthand_response(author_id),
-            Command::Roll(roll) => Handler::get_roll_response(roll, author_id),
+            Command::Clarification(message) => Response::Clarification(message),
+            Command::Error(message) => Response::Error(message),
+            Command::Help => self.get_help_response(),
+            Command::HelpShorthand => self.get_help_shorthand_response(),
+            Command::Roll(roll) => Handler::get_roll_response(roll),
             Command::Set(attribute) => self.get_set_response(&attribute, channel_id, author_id),
             Command::Show(attribute) => self.get_show_response(&attribute, channel_id, author_id),
             Command::ShowAbilities => self.get_show_abilities_response(channel_id, author_id),
@@ -68,9 +93,9 @@ impl Handler {
             let result = self.engine.parse(at_message.trim(), None, None);
             result
                 .map(|result| {
-                    parse_intent_result(result).unwrap_or(Command::Error("No intent".to_string()))
+                    parse_intent_result(result).unwrap_or(Command::Clarification("I'm not sure what you mean. Try asking again with a different or simpler phrasing. Try asking for help to see some examples.".to_string()))
                 })
-                .unwrap_or(Command::Error("Error parsing intent".to_string()))
+                .unwrap_or(Command::Error("An unknown error has occurred with reading your message. Try again.".to_string()))
         })
     }
 
@@ -79,79 +104,64 @@ impl Handler {
         character_roll: &CharacterRoll,
         channel_id: &ChannelId,
         author_id: &UserId,
-    ) -> String {
+    ) -> Response {
         self.pool
             .get()
             .map_err(|_| {
-                format!(
-                    "<@{}> Error obtaining connection from connection pool.",
-                    author_id
-                )
+                Response::Error("Error obtaining connection from connection pool.".to_string())
             })
             .and_then(|connection| {
                 Character::get(&connection, channel_id, author_id)
-                    .map_err(|_| format!("<@{}> Error retrieving character.", author_id))
+                    .map_err(|_| Response::Warning("Couldn't find any attributes for character. Try setting some ability scores and a character level first.".to_string()))
             })
             .and_then(|character| {
                 character_roll
                     .to_roll(&character)
-                    .ok_or(format!("<@{}> Missing stats in character.", author_id))
+                    .ok_or(Response::Warning("Couldn't find required ability scores for character. Try setting some ability scores and a character level first.".to_string()))
             })
             .map(|roll| {
                 let mut rng = rand::thread_rng();
                 let result = roll.roll(&mut rng);
-                format!(
-                    "🎲 <@{}> rolled {} ({}) = {}",
-                    author_id, character_roll.check, roll, result
-                )
+                Response::DiceRoll(format!(
+                    "rolled {} ({}) = {}",
+                    character_roll.check, roll, result
+                ))
             })
             .unwrap_or_else(|error| error)
     }
 
-    fn get_clarification_response(message: &str, author_id: &UserId) -> String {
-        format!("📎 <@{}> {}", author_id, message)
-    }
-
-    fn get_error_response(message: &str, author_id: &UserId) -> String {
-        format!(
-            "⚠️<@{}> **Error:** {} Type `!help` for help.",
-            author_id, message
-        )
-    }
-
-    fn get_help_response(&self, author_id: &UserId) -> String {
-        format!(
-            "🎱 <@{0}> Try typing the following:\n\
-             • \"<@{1}> Roll three d8s\"\n\
-             • \"<@{1}> Throw two twelve-sided dice\"\n\
-             • \"<@{1}> Do a strength check with advantage\"\n\
-             • \"<@{1}> Perform a wisdom saving throw\"\n\
-             • \"<@{1}> Try a stealth roll with disadvantage\"\n\
-             • \"<@{1}> Roll for initiative\"\n\
+    fn get_help_response(&self) -> Response {
+        Response::Help(format!(
+            "Try sending the following to <@{}>:\n\
+             • \"Roll three d8s\"\n\
+             • \"Throw two twelve-sided dice\"\n\
+             • \"Do a strength check with advantage\"\n\
+             • \"Perform a wisdom saving throw\"\n\
+             • \"Try a stealth roll with disadvantage\"\n\
+             • \"Roll for initiative\"\n\
              There are also short-hand commands you can use. Type \"!help\" for more info.",
-            author_id, self.bot_id
-        )
+            self.bot_id
+        ))
     }
 
-    fn get_help_shorthand_response(&self, author_id: &UserId) -> String {
-        format!(
-            "🎱 <@{0}> Try typing the following:\n\
+    fn get_help_shorthand_response(&self) -> Response {
+        Response::Help(format!(
+            "Try typing the following:\n\
              • \"!r 3d8\"\n\
              • \"!r 2d12+3\"\n\
              • \"!r strength with advantage\"\n\
              • \"!r wisdom saving throw\"\n\
              • \"!r stealth with disadvantage\"\n\
              • \"!r initiative\"\n\
-             There are also natural language commands you can use. Type \"<@{1}> help\" for more info.",
-            author_id,
+             There are also natural language commands you can use. Type \"<@{}> help\" for more info.",
             self.bot_id
-        )
+        ))
     }
 
-    fn get_roll_response(roll: Roll, author_id: &UserId) -> String {
+    fn get_roll_response(roll: Roll) -> Response {
         let mut rng = rand::thread_rng();
         let result = roll.roll(&mut rng);
-        format!("🎲 <@{}> rolled {} = {}", author_id, roll, result)
+        Response::DiceRoll(format!("rolled {} = {}", roll, result))
     }
 
     fn get_set_response(
@@ -159,20 +169,20 @@ impl Handler {
         attribute: &CharacterAttributeUpdate,
         channel_id: &ChannelId,
         author_id: &UserId,
-    ) -> String {
+    ) -> Response {
         self.pool
             .get()
-            .map_err(|_| {
-                format!(
-                    "<@{}> Error obtaining connection from connection pool.",
-                    author_id
+            .map_err(|_| Response::Error(CONNECTION_ERROR_TEXT.to_string()))
+            .and_then(|mut connection| {
+                Character::set_attribute(&mut connection, channel_id, author_id, attribute).map_err(
+                    |_| {
+                        Response::Error(
+                            "An unknown error occurred with updating character.".to_string(),
+                        )
+                    },
                 )
             })
-            .and_then(|mut connection| {
-                Character::set_attribute(&mut connection, channel_id, author_id, attribute)
-                    .map_err(|_| format!("<@{}> Error updating character.", author_id))
-            })
-            .map(|_| format!("<@{}> Updated character successfully.", author_id,))
+            .map(|_| Response::Update("Updated character successfully.".to_string()))
             .unwrap_or_else(|error| error)
     }
 
@@ -181,25 +191,18 @@ impl Handler {
         attribute: &CharacterAttribute,
         channel_id: &ChannelId,
         author_id: &UserId,
-    ) -> String {
+    ) -> Response {
         self.pool
             .get()
             .map_err(|_| {
-                format!(
-                    "<@{}> Error obtaining connection from connection pool.",
-                    author_id
-                )
+                Response::Error("An unknown error has occurred with obtaining a database connection.".to_string())
             })
             .and_then(|connection| {
                 Character::get(&connection, channel_id, author_id)
-                    .map_err(|_| format!("<@{}> Error retrieving character.", author_id))
+                    .map_err(|_| Response::Warning("Couldn't find any attributes for character. Try setting some ability scores and a character level first.".to_string()))
             })
             .map(|character| {
-                format!(
-                    "<@{}> {}",
-                    author_id,
-                    Handler::show_attribute(&character, attribute)
-                )
+                Response::Show(Handler::show_attribute(&character, attribute))
             })
             .unwrap_or_else(|error| error)
     }
@@ -256,56 +259,45 @@ impl Handler {
         }
     }
 
-    fn get_show_abilities_response(&self, channel_id: &ChannelId, author_id: &UserId) -> String {
+    fn get_show_abilities_response(&self, channel_id: &ChannelId, author_id: &UserId) -> Response {
         self.pool
             .get()
-            .map_err(|_| {
-                format!(
-                    "<@{}> Error obtaining connection from connection pool.",
-                    author_id
-                )
-            })
+            .map_err(|_| Response::Error(CONNECTION_ERROR_TEXT.to_string()))
             .and_then(|connection| {
                 Character::get(&connection, channel_id, author_id)
-                    .map_err(|_| format!("<@{}> Error retrieving character.", author_id))
+                    .map_err(|_| Response::Error("Error retrieving character.".to_string()))
             })
             .map(|character| {
-                format!(
-                    "<@{}>\n\
+                Response::Show(format!(
+                    "\n\
                      STR = {}\n\
                      DEX = {}\n\
                      CON = {}\n\
                      INT = {}\n\
                      WIS = {}\n\
                      CHA = {}",
-                    author_id,
                     Handler::format_ability(character.strength()),
                     Handler::format_ability(character.dexterity()),
                     Handler::format_ability(character.constitution()),
                     Handler::format_ability(character.intelligence()),
                     Handler::format_ability(character.wisdom()),
                     Handler::format_ability(character.charisma()),
-                )
+                ))
             })
             .unwrap_or_else(|error| error)
     }
 
-    fn get_show_skills_response(&self, channel_id: &ChannelId, author_id: &UserId) -> String {
+    fn get_show_skills_response(&self, channel_id: &ChannelId, author_id: &UserId) -> Response {
         self.pool
             .get()
-            .map_err(|_| {
-                format!(
-                    "<@{}> Error obtaining connection from connection pool.",
-                    author_id
-                )
-            })
+            .map_err(|_| Response::Error(CONNECTION_ERROR_TEXT.to_string()))
             .and_then(|connection| {
                 Character::get(&connection, channel_id, author_id)
-                    .map_err(|_| format!("<@{}> Error retrieving character.", author_id))
+                    .map_err(|_| Response::Warning("Error retrieving character.".to_string()))
             })
             .map(|character| {
-                format!(
-                    "<@{}>\n\
+                Response::Show(format!(
+                    "\n\
                      Acrobatics = {}\n\
                      Animal Handling = {}\n\
                      Arcana = {}\n\
@@ -324,7 +316,6 @@ impl Handler {
                      Sleight of Hand = {}\n\
                      Stealth = {}\n\
                      Survival = {}",
-                    author_id,
                     Handler::format_skill(character.acrobatics()),
                     Handler::format_skill(character.animal_handling()),
                     Handler::format_skill(character.arcana()),
@@ -343,7 +334,7 @@ impl Handler {
                     Handler::format_skill(character.sleight_of_hand()),
                     Handler::format_skill(character.stealth()),
                     Handler::format_skill(character.survival()),
-                )
+                ))
             })
             .unwrap_or_else(|error| error)
     }
@@ -380,7 +371,10 @@ impl EventHandler for Handler {
         let response = self.get_response(&msg);
 
         response.iter().for_each(|response| {
-            if let Err(why) = msg.channel_id.say(&ctx.http, response) {
+            if let Err(why) = msg
+                .channel_id
+                .say(&ctx.http, response.as_str(&msg.author.id))
+            {
                 println!("Error sending message: {:?}", why);
             }
         })
