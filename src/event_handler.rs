@@ -368,16 +368,19 @@ impl Handler {
 
 impl EventHandler for Handler {
     fn message(&self, ctx: Context, msg: Message) {
-        let response = self.get_response(&msg);
+        // Don't respond to our own messages, this may cause an infinite loop
+        if !msg.is_own(&ctx.cache) {
+            let response = self.get_response(&msg);
 
-        response.iter().for_each(|response| {
-            if let Err(why) = msg
-                .channel_id
-                .say(&ctx.http, response.as_str(&msg.author.id))
-            {
-                println!("Error sending message: {:?}", why);
-            }
-        })
+            response.iter().for_each(|response| {
+                if let Err(why) = msg
+                    .channel_id
+                    .say(&ctx.http, response.as_str(&msg.author.id))
+                {
+                    println!("Error sending message: {:?}", why);
+                }
+            })
+        }
     }
 
     fn ready(&self, _: Context, ready: Ready) {
