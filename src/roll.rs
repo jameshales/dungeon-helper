@@ -1,11 +1,13 @@
 use rand::distributions::{Distribution, Uniform};
 use rand::Rng;
 use regex::Regex;
-use std::cmp::{max, min};
 use std::fmt;
 
 /// The maximum number of dice that may be rolled at one time.
 pub const MAXIMUM_ROLLS: usize = 100;
+
+/// The maximum number of individual dice rolls that will be displayed in full.
+pub const MAXIMUM_ROLLS_DISPLAY: usize = 10;
 
 /// The maximum number of sides a die may have.
 pub const MAXIMUM_SIDES: i32 = 100;
@@ -32,6 +34,65 @@ pub struct Roll {
     sides: i32,
     modifier: i32,
     condition: Condition,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum Critical {
+    Success,
+    Failure,
+}
+
+#[derive(Debug, Eq, PartialEq)]
+pub struct RollResult {
+    result: i32,
+    dice: Vec<i32>,
+    modifier: i32,
+    critical: Option<Critical>,
+}
+
+impl fmt::Display for RollResult {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.result).and({
+            if self.dice.len() > 1 || self.modifier != 0 {
+                let mut iter = self.dice.iter().take(MAXIMUM_ROLLS_DISPLAY);
+                iter.next().map_or(Result::Ok(()), |head| {
+                    iter.fold(write!(f, " ({}", head), |result, die| {
+                        result.and(write!(f, " + {}", die))
+                    })
+                    .and(if self.dice.len() > MAXIMUM_ROLLS_DISPLAY {
+                        write!(f, " + …")
+                    } else {
+                        Result::Ok(())
+                    })
+                    .and(if self.modifier > 0 {
+                        write!(f, " + __{}__)", self.modifier)
+                    } else if self.modifier < 0 {
+                        write!(f, " - __{}__)", -self.modifier)
+                    } else {
+                        write!(f, ")")
+                    })
+                })
+            } else {
+                Result::Ok(())
+            }
+        })
+    }
+}
+
+#[derive(Debug, Eq, PartialEq)]
+pub struct ConditionalRollResult {
+    primary: RollResult,
+    secondary: Option<RollResult>,
+}
+
+impl fmt::Display for ConditionalRollResult {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.primary).and(
+            self.secondary.as_ref().map_or(Result::Ok(()), |secondary| {
+                write!(f, " / ~~{}~~", secondary)
+            }),
+        )
+    }
 }
 
 /// Represents an error that might occur when creating a roll.
@@ -150,23 +211,70 @@ impl Roll {
             })
     }
 
-    /// Roll the dice described by this Roll.
-    pub fn roll<R: Rng>(&self, rng: &mut R) -> i32 {
+    /// Roll the dice described by this roll, with any modifier
+    pub fn roll<R: Rng>(&self, rng: &mut R) -> ConditionalRollResult {
+        let first = self.roll_once(rng);
+        let second = self.roll_once(rng);
         match self.condition {
-            Condition::Advantage => max(self.roll_once(rng), self.roll_once(rng)),
-            Condition::Normal => self.roll_once(rng),
-            Condition::Disadvantage => min(self.roll_once(rng), self.roll_once(rng)),
+            Condition::Advantage => {
+                let (primary, secondary) = if first.result > second.result {
+                    (first, second)
+                } else {
+                    (second, first)
+                };
+                ConditionalRollResult {
+                    primary: primary,
+                    secondary: Some(secondary),
+                }
+            }
+            Condition::Normal => ConditionalRollResult {
+                primary: first,
+                secondary: None,
+            },
+            Condition::Disadvantage => {
+                let (primary, secondary) = if first.result < second.result {
+                    (first, second)
+                } else {
+                    (second, first)
+                };
+                ConditionalRollResult {
+                    primary: primary,
+                    secondary: Some(secondary),
+                }
+            }
         }
     }
 
     /// Roll the dice once, not taking into acccount advantage or disadvantage. This is repeated in
     /// order to perform a roll with advanatge or disadvantage.
-    fn roll_once<R: Rng>(&self, rng: &mut R) -> i32 {
+    pub fn roll_once<R: Rng>(&self, rng: &mut R) -> RollResult {
+        let dice = self.roll_once_component(rng);
+        let sum: i32 = dice.iter().sum();
+        let result = sum + self.modifier;
+        let critical = if self.rolls == 1 && self.sides == 20 {
+            if result == 1 {
+                Some(Critical::Failure)
+            } else if result == 20 {
+                Some(Critical::Success)
+            } else {
+                None
+            }
+        } else {
+            None
+        };
+        RollResult {
+            result,
+            dice,
+            modifier: self.modifier,
+            critical,
+        }
+    }
+
+    fn roll_once_component<R: Rng>(&self, rng: &mut R) -> Vec<i32> {
         Uniform::new_inclusive(1, self.sides)
             .sample_iter(rng)
             .take(self.rolls)
-            .sum::<i32>()
-            + self.modifier
+            .collect()
     }
 }
 

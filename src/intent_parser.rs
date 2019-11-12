@@ -3,7 +3,7 @@ use crate::character::{
 };
 use crate::character_roll::{CharacterRoll, Check};
 use crate::command::Command;
-use crate::roll::{Condition, Roll};
+use crate::roll::{Condition, Error, Roll};
 use snips_nlu_ontology::{IntentParserResult, Slot, SlotValue};
 use std::convert::TryFrom;
 
@@ -62,8 +62,21 @@ fn parse_roll_dice(slots: &Vec<Slot>) -> Command {
     sides.map_or(
         Command::Clarification(format!("It looks like you're trying to roll some dice, but I'm not sure what kind of dice you want. Try \"Roll a d20\", \"Throw two four-sided dice\", etc.")),
         |sides| {
-            let roll = Roll::new(rolls, sides, 0, condition).unwrap();
-            Command::Roll(roll)
+            match Roll::new(rolls, sides, 0, condition) {
+                Ok(roll) => Command::Roll(roll),
+                Err(Error::RollsNonPositive) => {
+                    Command::Clarification(format!("It looks like you're trying to roll {} dice. I can only roll a positive number of dice. Try rolling one or more dice.", rolls))
+                }
+                Err(Error::RollsTooGreat) => {
+                    Command::Clarification(format!("It looks like you're trying to roll {} dice. That's too many dice! Try rolling 100 or fewer dice.", rolls))
+                }
+                Err(Error::SidesNonPositive) => {
+                    Command::Clarification(format!("It looks like you're trying to roll dice with {} sides. I can only roll a positive number of sides. Try rolling dice with one or more sides.", sides))
+                }
+                Err(Error::SidesTooGreat) => {
+                    Command::Clarification(format!("It looks like you're trying to roll dice with {} sides. That's too many sides! Try rolling dice with 100 or fewer sides.", sides))
+                }
+            }
         }
     )
 }
