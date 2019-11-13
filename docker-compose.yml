@@ -6,6 +6,7 @@ services:
     - DISCORD_BOT_ID
     - DISCORD_TOKEN
     - MODEL_PATH=/opt/dungeon-helper/share/model
+    - RUST_LOG=dungeon-helper=INFO
     volumes:
     - type: bind
       source: ./model
