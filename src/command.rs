@@ -46,15 +46,18 @@ pub enum Command {
 impl Command {
     pub fn is_admin(&self) -> bool {
         match self {
-            Command::SetBotDisabled | Command::SetBotEnabled => true,
-            _ => false
+            Command::SetBotDisabled
+            | Command::SetBotEnabled
+            | Command::SetCharactersLocked
+            | Command::SetCharactersUnlocked => true,
+            _ => false,
         }
     }
 
     pub fn is_editing(&self) -> bool {
         match self {
             Command::Set(_) => true,
-            _ => false
+            _ => false,
         }
     }
 
@@ -73,9 +76,8 @@ impl Command {
                     .map_err(|error| Command::ShowWarning(error.message().to_string()))
                     .or(CharacterRoll::parse(&roll_command)
                         .map(|roll| Command::CharacterRoll(roll))
-                        .ok_or(Command::ShowWarning("Invalid syntax.".to_string()))
-                    )
-                    .unwrap_or_else(identity)
+                        .ok_or(Command::ShowWarning("Invalid syntax.".to_string())))
+                    .unwrap_or_else(identity),
             )
         } else {
             None

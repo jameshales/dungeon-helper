@@ -41,17 +41,16 @@ enum Response {
 }
 
 impl Response {
-    pub fn as_str(
-        &self,
-        author_id: &UserId,
-        message_id: &MessageId,
-    ) -> String {
+    pub fn as_str(&self, author_id: &UserId, message_id: &MessageId) -> String {
         match self {
             Response::Clarification(message) => format!("📎 <@{}> {}", author_id, message),
             Response::DiceRoll(message) => format!("🎲 <@{}> {}", author_id, message),
             Response::Error(error) => {
                 error!(target: "dungeon-helper", "Error processing command. Message ID: {}; Error = {:?}", message_id, error);
-                format!("💥 <@{}> **Error:** A technical error has occurred. Reference ID: {}", author_id, message_id)
+                format!(
+                    "💥 <@{}> **Error:** A technical error has occurred. Reference ID: {}",
+                    author_id, message_id
+                )
             }
             Response::Help(message) => format!("🎱 <@{}> {}", author_id, message),
             Response::Show(message) => format!("<@{}> {}", author_id, message),
@@ -99,8 +98,12 @@ impl Handler {
             Command::Set(attribute) => self.get_set_response(&attribute, channel_id, author_id),
             Command::SetBotDisabled => self.get_set_bot_enabled_response(channel_id, false),
             Command::SetBotEnabled => self.get_set_bot_enabled_response(channel_id, true),
-            Command::SetCharactersLocked => self.get_set_characters_locked_response(channel_id, true),
-            Command::SetCharactersUnlocked => self.get_set_characters_locked_response(channel_id, false),
+            Command::SetCharactersLocked => {
+                self.get_set_characters_locked_response(channel_id, true)
+            }
+            Command::SetCharactersUnlocked => {
+                self.get_set_characters_locked_response(channel_id, false)
+            }
             Command::Show(attribute) => self.get_show_response(&attribute, channel_id, author_id),
             Command::ShowError(error) => Response::Error(error),
             Command::ShowWarning(message) => Response::Warning(message),
@@ -227,11 +230,8 @@ impl Handler {
             .get()
             .map_err(|error| Response::Error(Error::R2D2Error(error)))
             .and_then(|mut connection| {
-                Character::set_attribute(&mut connection, channel_id, author_id, attribute).map_err(
-                    |error| {
-                        Response::Error(Error::RusqliteError(error))
-                    },
-                )
+                Character::set_attribute(&mut connection, channel_id, author_id, attribute)
+                    .map_err(|error| Response::Error(Error::RusqliteError(error)))
             })
             .map(|_| Response::Update(format!("Set {}", attribute)))
             .unwrap_or_else(identity)
@@ -243,7 +243,12 @@ impl Handler {
             .map_err(|error| Response::Error(Error::R2D2Error(error)))
             .and_then(|mut connection| {
                 Channel::set_enabled(&mut connection, channel_id, enabled)
-                    .map(|_| Response::Update(format!("Dungeon Helper is now {} in this channel.", if enabled { "enabled" } else { "disabled" })))
+                    .map(|_| {
+                        Response::Update(format!(
+                            "Dungeon Helper is now {} in this channel.",
+                            if enabled { "enabled" } else { "disabled" }
+                        ))
+                    })
                     .map_err(|error| Response::Error(Error::RusqliteError(error)))
             })
             .unwrap_or_else(identity)
@@ -255,7 +260,12 @@ impl Handler {
             .map_err(|error| Response::Error(Error::R2D2Error(error)))
             .and_then(|mut connection| {
                 Channel::set_locked(&mut connection, channel_id, locked)
-                    .map(|_| Response::Update(format!("Character attributes are now {} in this channel.", if locked { "locked" } else { "unlocked" })))
+                    .map(|_| {
+                        Response::Update(format!(
+                            "Character attributes are now {} in this channel.",
+                            if locked { "locked" } else { "unlocked" }
+                        ))
+                    })
                     .map_err(|error| Response::Error(Error::RusqliteError(error)))
             })
             .unwrap_or_else(identity)
@@ -440,10 +450,11 @@ impl Handler {
         self.pool
             .get()
             .ok()
-            .and_then(|mut connection| {
-                Channel::get(&mut connection, channel_id).ok()
+            .and_then(|mut connection| Channel::get(&mut connection, channel_id).ok())
+            .unwrap_or(Channel {
+                enabled: false,
+                locked: false,
             })
-            .unwrap_or(Channel { enabled: false, locked: false })
     }
 }
 
@@ -470,10 +481,13 @@ impl EventHandler for Handler {
                     };
                     info!(target: "dungeon-helper", "Parsed command. Message ID: {}; Command: {:?}", message.id, command);
                     let channel = self.get_channel(&message.channel_id);
-                    if !channel.enabled && !command.is_admin() {
+                    let is_admin = message.member(&ctx.cache).map_or(true, |member| member.permissions(&ctx.cache).ok().map_or(false, |permissions| permissions.administrator()));
+                    if !is_admin && !channel.enabled {
                         info!(target: "dungeon-helper", "Ignoring command because Dungeon Helper is disabled in current channel. Message ID: {}", message.id);
-                    } else if channel.locked && command.is_editing() {
+                    } else if !is_admin && channel.locked && command.is_editing() {
                         info!(target: "dungeon-helper", "Ignoring command because editing is locked in current channel. Message ID: {}", message.id);
+                    } else if !is_admin && command.is_admin() {
+                        info!(target: "dungeon-helper", "Ignoring command because it is an admin command and the current user is not an admin. Message ID: {}", message.id);
                     } else {
                         let response = self.get_response(command, &message.channel_id, &message.author.id);
                         if let Err(why) = message

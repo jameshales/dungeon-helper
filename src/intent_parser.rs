@@ -42,7 +42,9 @@ pub fn parse_intent_result(result: &IntentParserResult) -> Option<Command> {
             "showSavingThrow" => parse_show_saving_throw(&slots),
             "showSkill" => parse_show_skill(&slots),
             "showSkills" => Command::ShowSkills,
-            intent_name => Command::ShowError(command::Error::UnknownIntent(intent_name.to_string())),
+            intent_name => {
+                Command::ShowError(command::Error::UnknownIntent(intent_name.to_string()))
+            }
         })
 }
 
