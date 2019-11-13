@@ -116,7 +116,7 @@ impl Handler {
 
     fn extract_at_message(&self, message: &str) -> Option<String> {
         lazy_static! {
-            static ref COMMAND_REGEX: Regex = Regex::new(r"^<@(\d+)> +(.*)$").unwrap();
+            static ref COMMAND_REGEX: Regex = Regex::new(r"^<@!?(\d+)> +(.*)$").unwrap();
         }
 
         COMMAND_REGEX.captures(&message).and_then(|c| {
