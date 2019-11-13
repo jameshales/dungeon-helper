@@ -49,7 +49,7 @@ impl Response {
             Response::Clarification(message) => format!("📎 <@{}> {}", author_id, message),
             Response::DiceRoll(message) => format!("🎲 <@{}> {}", author_id, message),
             Response::Error(error) => {
-                error!("Error processing command. Message ID: {}; Error = {:?}", message_id, error);
+                error!(target: "dungeon-helper", "Error processing command. Message ID: {}; Error = {:?}", message_id, error);
                 format!("💥 <@{}> **Error:** A technical error has occurred. Reference ID: {}", author_id, message_id)
             }
             Response::Help(message) => format!("🎱 <@{}> {}", author_id, message),
@@ -139,7 +139,7 @@ impl Handler {
     ) -> () {
         self.pool
             .get()
-            .map_err(|error| error!("Error obtaining database connection. Message ID: {}; Error: {}", message.id, error))
+            .map_err(|error| error!(target: "dungeon-helper", "Error obtaining database connection. Message ID: {}; Error: {}", message.id, error))
             .and_then(|mut connection| {
                 log_intent_result(&mut connection, message, intent_result)
                     .map_err(|error|
