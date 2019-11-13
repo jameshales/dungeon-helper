@@ -32,6 +32,10 @@ pub enum Command {
     HelpShorthand,
     Roll(crate::roll::Roll),
     Set(CharacterAttributeUpdate),
+    SetBotDisabled,
+    SetBotEnabled,
+    SetCharactersLocked,
+    SetCharactersUnlocked,
     Show(CharacterAttribute),
     ShowError(Error),
     ShowWarning(String),
@@ -40,6 +44,20 @@ pub enum Command {
 }
 
 impl Command {
+    pub fn is_admin(&self) -> bool {
+        match self {
+            Command::SetBotDisabled | Command::SetBotEnabled => true,
+            _ => false
+        }
+    }
+
+    pub fn is_editing(&self) -> bool {
+        match self {
+            Command::Set(_) => true,
+            _ => false
+        }
+    }
+
     pub fn parse_shorthand(command: &str) -> Option<Command> {
         lazy_static! {
             static ref ROLL_COMMAND_REGEX: Regex = Regex::new(r"^!(?:r|roll) +(.*)$").unwrap();

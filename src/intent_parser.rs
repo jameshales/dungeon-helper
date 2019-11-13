@@ -27,6 +27,10 @@ pub fn parse_intent_result(result: &IntentParserResult) -> Option<Command> {
             }
             "setSavingThrow" => parse_set_saving_throw(&slots),
             "setSkill" => parse_set_skill(&slots),
+            "setBotDisabled" => Command::SetBotDisabled,
+            "setBotEnabled" => Command::SetBotEnabled,
+            "setCharactersLocked" => Command::SetCharactersLocked,
+            "setCharactersUnlocked" => Command::SetCharactersUnlocked,
             "showAbilities" => Command::ShowAbilities,
             "showAbility" => parse_show_ability(&slots),
             "showHelp" => Command::Help,

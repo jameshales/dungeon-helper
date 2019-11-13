@@ -2,6 +2,7 @@
 extern crate lazy_static;
 extern crate log;
 
+mod channel;
 mod character;
 mod character_roll;
 mod command;

@@ -192,7 +192,7 @@ impl Character {
              WHERE channel_id = $1 \
              AND user_id = $2",
             &[&channel_id.to_string(), &user_id.to_string()],
-            |row| Character::from_row(row),
+            Character::from_row,
         )
     }
 

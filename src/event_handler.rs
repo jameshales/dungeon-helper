@@ -1,3 +1,4 @@
+use crate::channel::Channel;
 use crate::character::{
     Ability, Character, CharacterAttribute, CharacterAttributeUpdate, SavingThrow, Skill,
 };
@@ -96,6 +97,10 @@ impl Handler {
             Command::HelpShorthand => self.get_help_shorthand_response(),
             Command::Roll(roll) => Handler::get_roll_response(roll),
             Command::Set(attribute) => self.get_set_response(&attribute, channel_id, author_id),
+            Command::SetBotDisabled => self.get_set_bot_enabled_response(channel_id, false),
+            Command::SetBotEnabled => self.get_set_bot_enabled_response(channel_id, true),
+            Command::SetCharactersLocked => self.get_set_characters_locked_response(channel_id, true),
+            Command::SetCharactersUnlocked => self.get_set_characters_locked_response(channel_id, false),
             Command::Show(attribute) => self.get_show_response(&attribute, channel_id, author_id),
             Command::ShowError(error) => Response::Error(error),
             Command::ShowWarning(message) => Response::Warning(message),
@@ -175,7 +180,7 @@ impl Handler {
                     character_roll.check, roll, result
                 ))
             })
-            .unwrap_or_else(|error| error)
+            .unwrap_or_else(identity)
     }
 
     fn get_help_response(&self) -> Response {
@@ -229,7 +234,31 @@ impl Handler {
                 )
             })
             .map(|_| Response::Update(format!("Set {}", attribute)))
-            .unwrap_or_else(|error| error)
+            .unwrap_or_else(identity)
+    }
+
+    fn get_set_bot_enabled_response(&self, channel_id: &ChannelId, enabled: bool) -> Response {
+        self.pool
+            .get()
+            .map_err(|error| Response::Error(Error::R2D2Error(error)))
+            .and_then(|mut connection| {
+                Channel::set_enabled(&mut connection, channel_id, enabled)
+                    .map(|_| Response::Update(format!("Dungeon Helper is now {} in this channel.", if enabled { "enabled" } else { "disabled" })))
+                    .map_err(|error| Response::Error(Error::RusqliteError(error)))
+            })
+            .unwrap_or_else(identity)
+    }
+
+    fn get_set_characters_locked_response(&self, channel_id: &ChannelId, locked: bool) -> Response {
+        self.pool
+            .get()
+            .map_err(|error| Response::Error(Error::R2D2Error(error)))
+            .and_then(|mut connection| {
+                Channel::set_locked(&mut connection, channel_id, locked)
+                    .map(|_| Response::Update(format!("Character attributes are now {} in this channel.", if locked { "locked" } else { "unlocked" })))
+                    .map_err(|error| Response::Error(Error::RusqliteError(error)))
+            })
+            .unwrap_or_else(identity)
     }
 
     fn get_show_response(
@@ -246,7 +275,7 @@ impl Handler {
                     .map_err(|_| Response::Warning(CHARACTER_NOT_FOUND_WARNING_TEXT.to_string()))
             })
             .map(|character| Response::Show(Handler::show_attribute(&character, attribute)))
-            .unwrap_or_else(|error| error)
+            .unwrap_or_else(identity)
     }
 
     fn show_attribute(character: &Character, attribute: &CharacterAttribute) -> String {
@@ -326,7 +355,7 @@ impl Handler {
                     Handler::format_ability(character.charisma()),
                 ))
             })
-            .unwrap_or_else(|error| error)
+            .unwrap_or_else(identity)
     }
 
     fn get_show_skills_response(&self, channel_id: &ChannelId, author_id: &UserId) -> Response {
@@ -378,7 +407,7 @@ impl Handler {
                     Handler::format_skill(character.survival()),
                 ))
             })
-            .unwrap_or_else(|error| error)
+            .unwrap_or_else(identity)
     }
 
     fn format_ability(ability: Option<Ability>) -> String {
@@ -406,6 +435,16 @@ impl Handler {
             format!("{:+} ({})", s.modifier, s.proficiency.as_str())
         })
     }
+
+    fn get_channel(&self, channel_id: &ChannelId) -> Channel {
+        self.pool
+            .get()
+            .ok()
+            .and_then(|mut connection| {
+                Channel::get(&mut connection, channel_id).ok()
+            })
+            .unwrap_or(Channel { enabled: false, locked: false })
+    }
 }
 
 impl EventHandler for Handler {
@@ -430,12 +469,19 @@ impl EventHandler for Handler {
                         }
                     };
                     info!(target: "dungeon-helper", "Parsed command. Message ID: {}; Command: {:?}", message.id, command);
-                    let response = self.get_response(command, &message.channel_id, &message.author.id);
-                    if let Err(why) = message
-                        .channel_id
-                        .say(&ctx.http, response.as_str(&message.author.id, &message.id))
-                    {
-                        error!(target: "dungeon-helper", "Error sending message: Message ID: {}, Error: {:?}", message.id, why);
+                    let channel = self.get_channel(&message.channel_id);
+                    if !channel.enabled && !command.is_admin() {
+                        info!(target: "dungeon-helper", "Ignoring command because Dungeon Helper is disabled in current channel. Message ID: {}", message.id);
+                    } else if channel.locked && command.is_editing() {
+                        info!(target: "dungeon-helper", "Ignoring command because editing is locked in current channel. Message ID: {}", message.id);
+                    } else {
+                        let response = self.get_response(command, &message.channel_id, &message.author.id);
+                        if let Err(why) = message
+                            .channel_id
+                            .say(&ctx.http, response.as_str(&message.author.id, &message.id))
+                        {
+                            error!(target: "dungeon-helper", "Error sending message: Message ID: {}, Error: {:?}", message.id, why);
+                        }
                     }
                 }
             )
