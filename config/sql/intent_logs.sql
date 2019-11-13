@@ -12,7 +12,7 @@ CREATE TABLE slots (
   message_id TEXT NOT NULL REFERENCES messages (message_id),
   slot_index TEXT NOT NULL,
   raw_value TEXT NOT NULL,
-  value TEXT NOT NULL,
+  value TEXT NULL,
   slot_name TEXT NOT NULL,
   confidence_score REAL NULL,
   PRIMARY KEY (message_id, slot_index)
