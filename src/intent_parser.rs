@@ -2,6 +2,7 @@ use crate::character::{
     AbilityName, CharacterAttribute, CharacterAttributeUpdate, Proficiency, SkillName,
 };
 use crate::character_roll::{CharacterRoll, Check};
+use crate::command;
 use crate::command::Command;
 use crate::roll::{Condition, Error, Roll};
 use snips_nlu_ontology::{IntentParserResult, Slot, SlotValue};
@@ -37,9 +38,7 @@ pub fn parse_intent_result(result: &IntentParserResult) -> Option<Command> {
             "showSavingThrow" => parse_show_saving_throw(&slots),
             "showSkill" => parse_show_skill(&slots),
             "showSkills" => Command::ShowSkills,
-            _ => Command::Error(
-                "An unknown error occurred with understanding your request.".to_string(),
-            ),
+            intent_name => Command::ShowError(command::Error::UnknownIntent(intent_name.to_string())),
         })
 }
 

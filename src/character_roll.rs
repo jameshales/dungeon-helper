@@ -3,6 +3,7 @@ use crate::roll::{Condition, Roll};
 use regex::Regex;
 use std::fmt;
 
+#[derive(Debug)]
 pub struct CharacterRoll {
     pub check: Check,
     pub condition: Condition,
@@ -37,6 +38,7 @@ impl CharacterRoll {
     }
 }
 
+#[derive(Debug)]
 pub enum Check {
     Ability(AbilityName),
     Initiative,

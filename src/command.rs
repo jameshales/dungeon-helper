@@ -3,16 +3,38 @@ use crate::character_roll::CharacterRoll;
 use crate::roll::Roll;
 use regex::Regex;
 use std::convert::identity;
+use std::fmt;
 
+#[derive(Debug)]
+pub enum Error {
+    R2D2Error(r2d2::Error),
+    RusqliteError(rusqlite::Error),
+    IntentParserError(::failure::Error),
+    UnknownIntent(String),
+}
+
+impl fmt::Display for Error {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Error::R2D2Error(error) => write!(f, "Connection pool error: {}", error),
+            Error::RusqliteError(error) => write!(f, "Database error: {}", error),
+            Error::IntentParserError(error) => write!(f, "Intent parser error: {}", error),
+            Error::UnknownIntent(intent_name) => write!(f, "Unknown intent: {}", intent_name),
+        }
+    }
+}
+
+#[derive(Debug)]
 pub enum Command {
     CharacterRoll(crate::character_roll::CharacterRoll),
     Clarification(String),
-    Error(String),
     Help,
     HelpShorthand,
     Roll(crate::roll::Roll),
     Set(CharacterAttributeUpdate),
     Show(CharacterAttribute),
+    ShowError(Error),
+    ShowWarning(String),
     ShowAbilities,
     ShowSkills,
 }
@@ -30,11 +52,12 @@ impl Command {
             Some(
                 Roll::parse(&roll_command)
                     .map(|roll| Command::Roll(roll))
-                    .map_err(|error| Command::Error(error.message().to_string()))
+                    .map_err(|error| Command::ShowWarning(error.message().to_string()))
                     .or(CharacterRoll::parse(&roll_command)
                         .map(|roll| Command::CharacterRoll(roll))
-                        .ok_or(Command::Error("Invalid character roll?".to_string())))
-                    .unwrap_or_else(identity),
+                        .ok_or(Command::ShowWarning("Invalid syntax.".to_string()))
+                    )
+                    .unwrap_or_else(identity)
             )
         } else {
             None

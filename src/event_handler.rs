@@ -2,10 +2,11 @@ use crate::character::{
     Ability, Character, CharacterAttribute, CharacterAttributeUpdate, SavingThrow, Skill,
 };
 use crate::character_roll::CharacterRoll;
-use crate::command::Command;
+use crate::command::{Command, Error};
 use crate::intent_logger::log_intent_result;
 use crate::intent_parser::parse_intent_result;
 use crate::roll::Roll;
+use log::{error, info};
 use r2d2::Pool;
 use r2d2_sqlite::SqliteConnectionManager;
 use regex::Regex;
@@ -17,7 +18,7 @@ use serenity::{
     model::{
         channel::Message,
         gateway::Ready,
-        id::{ChannelId, UserId},
+        id::{ChannelId, MessageId, UserId},
     },
     prelude::*,
 };
@@ -28,13 +29,10 @@ const CHARACTER_NOT_FOUND_WARNING_TEXT: &str =
 const ABILITY_NOT_SET_WARNING_TEXT: &str =
     "Couldn't find required ability scores for character. Try setting some ability scores and a character level first.";
 
-const CONNECTION_ERROR_TEXT: &str =
-    "An unknown error occurred with obtaining a database connection.";
-
 enum Response {
     Clarification(String),
     DiceRoll(String),
-    Error(String),
+    Error(Error),
     Help(String),
     Show(String),
     Update(String),
@@ -42,11 +40,18 @@ enum Response {
 }
 
 impl Response {
-    pub fn as_str(&self, author_id: &UserId) -> String {
+    pub fn as_str(
+        &self,
+        author_id: &UserId,
+        message_id: &MessageId,
+    ) -> String {
         match self {
             Response::Clarification(message) => format!("📎 <@{}> {}", author_id, message),
             Response::DiceRoll(message) => format!("🎲 <@{}> {}", author_id, message),
-            Response::Error(message) => format!("💥 <@{}> **Error:** {}", author_id, message),
+            Response::Error(error) => {
+                error!("Error processing command. Message ID: {}; Error = {:?}", message_id, error);
+                format!("💥 <@{}> **Error:** A technical error has occurred. Reference ID: {}", author_id, message_id)
+            }
             Response::Help(message) => format!("🎱 <@{}> {}", author_id, message),
             Response::Show(message) => format!("<@{}> {}", author_id, message),
             Response::Update(message) => format!("💾 <@{}> {}", author_id, message),
@@ -87,12 +92,13 @@ impl Handler {
                 self.get_character_roll_response(&roll, channel_id, author_id)
             }
             Command::Clarification(message) => Response::Clarification(message),
-            Command::Error(message) => Response::Error(message),
             Command::Help => self.get_help_response(),
             Command::HelpShorthand => self.get_help_shorthand_response(),
             Command::Roll(roll) => Handler::get_roll_response(roll),
             Command::Set(attribute) => self.get_set_response(&attribute, channel_id, author_id),
             Command::Show(attribute) => self.get_show_response(&attribute, channel_id, author_id),
+            Command::ShowError(error) => Response::Error(error),
+            Command::ShowWarning(message) => Response::Warning(message),
             Command::ShowAbilities => self.get_show_abilities_response(channel_id, author_id),
             Command::ShowSkills => self.get_show_skills_response(channel_id, author_id),
         }
@@ -110,7 +116,7 @@ impl Handler {
                         (command, Some(result))
                     }
                 )
-                .unwrap_or((Command::Error("An unknown error has occurred with understanding your message. Try again.".to_string()), None))
+                .unwrap_or_else(|error| (Command::ShowError(Error::IntentParserError(error)), None))
         })
     }
 
@@ -133,7 +139,13 @@ impl Handler {
     ) -> () {
         self.pool
             .get()
-            .map(|mut connection| log_intent_result(&mut connection, message, intent_result))
+            .map_err(|error| error!("Error obtaining database connection. Message ID: {}; Error: {}", message.id, error))
+            .and_then(|mut connection| {
+                log_intent_result(&mut connection, message, intent_result)
+                    .map_err(|error|
+                        error!(target: "dungeon-helper", "Error logging intent result. Message ID: {}; Error: {}", message.id, error)
+                    )
+            })
             .unwrap_or(())
     }
 
@@ -145,7 +157,7 @@ impl Handler {
     ) -> Response {
         self.pool
             .get()
-            .map_err(|_| Response::Error(CONNECTION_ERROR_TEXT.to_string()))
+            .map_err(|error| Response::Error(Error::R2D2Error(error)))
             .and_then(|connection| {
                 Character::get(&connection, channel_id, author_id)
                     .map_err(|_| Response::Warning(CHARACTER_NOT_FOUND_WARNING_TEXT.to_string()))
@@ -208,13 +220,11 @@ impl Handler {
     ) -> Response {
         self.pool
             .get()
-            .map_err(|_| Response::Error(CONNECTION_ERROR_TEXT.to_string()))
+            .map_err(|error| Response::Error(Error::R2D2Error(error)))
             .and_then(|mut connection| {
                 Character::set_attribute(&mut connection, channel_id, author_id, attribute).map_err(
-                    |_| {
-                        Response::Error(
-                            "An unknown error occurred with updating your character.".to_string(),
-                        )
+                    |error| {
+                        Response::Error(Error::RusqliteError(error))
                     },
                 )
             })
@@ -230,7 +240,7 @@ impl Handler {
     ) -> Response {
         self.pool
             .get()
-            .map_err(|_| Response::Error(CONNECTION_ERROR_TEXT.to_string()))
+            .map_err(|error| Response::Error(Error::R2D2Error(error)))
             .and_then(|connection| {
                 Character::get(&connection, channel_id, author_id)
                     .map_err(|_| Response::Warning(CHARACTER_NOT_FOUND_WARNING_TEXT.to_string()))
@@ -294,10 +304,10 @@ impl Handler {
     fn get_show_abilities_response(&self, channel_id: &ChannelId, author_id: &UserId) -> Response {
         self.pool
             .get()
-            .map_err(|_| Response::Error(CONNECTION_ERROR_TEXT.to_string()))
+            .map_err(|error| Response::Error(Error::R2D2Error(error)))
             .and_then(|connection| {
                 Character::get(&connection, channel_id, author_id)
-                    .map_err(|_| Response::Error("Error retrieving character.".to_string()))
+                    .map_err(|error| Response::Error(Error::RusqliteError(error)))
             })
             .map(|character| {
                 Response::Show(format!(
@@ -322,7 +332,7 @@ impl Handler {
     fn get_show_skills_response(&self, channel_id: &ChannelId, author_id: &UserId) -> Response {
         self.pool
             .get()
-            .map_err(|_| Response::Error(CONNECTION_ERROR_TEXT.to_string()))
+            .map_err(|error| Response::Error(Error::R2D2Error(error)))
             .and_then(|connection| {
                 Character::get(&connection, channel_id, author_id)
                     .map_err(|_| Response::Warning("Error retrieving character.".to_string()))
@@ -400,31 +410,39 @@ impl Handler {
 
 impl EventHandler for Handler {
     fn message(&self, ctx: Context, message: Message) {
-        // Don't respond to our own messages, this may cause an infinite loop
-        if !message.is_own(&ctx.cache) {
-            let command =
-                self.get_message_command(&message)
-                    .map(|message_command| match message_command {
-                        MessageCommand::Shorthand(command) => command,
+        if message.is_own(&ctx.cache) {
+            // Don't respond to our own messages, this may cause an infinite loop
+            info!(target: "dungeon-helper", "Sent message. Message ID: {}; Content: {}", message.id, message.content.escape_debug());
+        } else {
+            info!(target: "dungeon-helper", "Received message. Message ID: {}; Content: {}", message.id, message.content.escape_debug());
+            self.get_message_command(&message).map_or_else(
+                || info!(target: "dungeon-helper", "Message contains no command. Message ID: {}", message.id),
+                |message_command| {
+                    let command = match message_command {
+                        MessageCommand::Shorthand(command) => {
+                            info!(target: "dungeon-helper", "Handling shorthand command. Message ID: {}", message.id);
+                            command
+                        }
                         MessageCommand::NaturalLanguage(command, intent_result) => {
+                            info!(target: "dungeon-helper", "Handling natural language command. Message ID: {}", message.id);
                             self.log_intent_result(&message, &intent_result);
                             command
                         }
-                    });
-
-            command.map(|command| {
-                let response = self.get_response(command, &message.channel_id, &message.author.id);
-                if let Err(why) = message
-                    .channel_id
-                    .say(&ctx.http, response.as_str(&message.author.id))
-                {
-                    println!("Error sending message: {:?}", why);
+                    };
+                    info!(target: "dungeon-helper", "Parsed command. Message ID: {}; Command: {:?}", message.id, command);
+                    let response = self.get_response(command, &message.channel_id, &message.author.id);
+                    if let Err(why) = message
+                        .channel_id
+                        .say(&ctx.http, response.as_str(&message.author.id, &message.id))
+                    {
+                        error!(target: "dungeon-helper", "Error sending message: Message ID: {}, Error: {:?}", message.id, why);
+                    }
                 }
-            });
+            )
         }
     }
 
     fn ready(&self, _: Context, ready: Ready) {
-        println!("{} is connected!", ready.user.name);
+        info!(target: "dungeon-helper", "{} is connected!", ready.user.name);
     }
 }
