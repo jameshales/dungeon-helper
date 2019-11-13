@@ -26,7 +26,9 @@ fn main() {
 
     let token = env::var("DISCORD_TOKEN").expect("Expected a token in the environment");
 
-    let engine = SnipsNluEngine::from_path("model").unwrap();
+    let model_path = env::var("MODEL_PATH").expect("Expected a model path in the environment");
+
+    let engine = SnipsNluEngine::from_path(model_path).unwrap();
 
     let manager = SqliteConnectionManager::file("dungeon-helper.db");
 
