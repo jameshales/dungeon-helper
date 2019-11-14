@@ -15,6 +15,7 @@ use rusqlite::Result as RusqliteResult;
 use snips_nlu_lib::SnipsNluEngine;
 use snips_nlu_ontology::IntentParserResult;
 use std::convert::identity;
+use std::sync::RwLock;
 
 use serenity::{
     model::{
@@ -62,14 +63,9 @@ impl Response {
 }
 
 pub struct Handler {
-    pub bot_id: String,
+    pub bot_id: RwLock<Option<String>>,
     pub engine: SnipsNluEngine,
     pub pool: Pool<SqliteConnectionManager>,
-}
-
-enum MessageCommand {
-    Shorthand(Command),
-    NaturalLanguage(Command, Option<IntentParserResult>),
 }
 
 impl Handler {
@@ -137,8 +133,12 @@ impl Handler {
             static ref COMMAND_REGEX: Regex = Regex::new(r"^(?:<@!?(\d+)> *)?(.*)$").unwrap();
         }
 
+        let bot_id = self.bot_id.try_read().ok();
+
         COMMAND_REGEX.captures(&message).and_then(|c| {
-            let is_at_message = c.get(1).map_or(false, |m| m.as_str() == self.bot_id);
+            let is_at_message = c.get(1).map_or(false, |m| {
+                bot_id.map_or(false, |bot_id| *bot_id == Some(m.as_str().to_string()))
+            });
             if dice_only || is_at_message {
                 c.get(2).map(|m| m.as_str().to_string())
             } else {
@@ -195,15 +195,14 @@ impl Handler {
 
     fn help(&self) -> Response {
         Response::Help(format!(
-            "Try sending the following to <@{}>:\n\
+            "Try typing the following:\n\
              • \"Roll three d8s\"\n\
              • \"Throw two twelve-sided dice\"\n\
              • \"Do a strength check with advantage\"\n\
              • \"Perform a wisdom saving throw\"\n\
              • \"Try a stealth roll with disadvantage\"\n\
              • \"Roll for initiative\"\n\
-             There are also short-hand commands you can use. Type \"!help\" for more info.",
-            self.bot_id
+             There are also short-hand commands you can use. Type \"!help\" for more info."
         ))
     }
 
@@ -216,8 +215,7 @@ impl Handler {
              • \"!r wisdom saving throw\"\n\
              • \"!r stealth with disadvantage\"\n\
              • \"!r initiative\"\n\
-             There are also natural language commands you can use. Type \"<@{}> help\" for more info.",
-            self.bot_id
+             There are also natural language commands you can use. Type \"help\" for more info.",
         ))
     }
 
@@ -464,6 +462,11 @@ impl Handler {
     }
 }
 
+enum MessageCommand {
+    Shorthand(Command),
+    NaturalLanguage(Command, Option<IntentParserResult>),
+}
+
 impl EventHandler for Handler {
     fn message(&self, ctx: Context, message: Message) {
         if message.is_own(&ctx.cache) {
@@ -509,6 +512,11 @@ impl EventHandler for Handler {
     }
 
     fn ready(&self, _: Context, ready: Ready) {
+        let mut bot_id = self
+            .bot_id
+            .write()
+            .expect("RwLock for bot_id has been poisoned");
+        *bot_id = Some(ready.user.id.to_string());
         info!(target: "dungeon-helper", "{} is connected!", ready.user.name);
     }
 }

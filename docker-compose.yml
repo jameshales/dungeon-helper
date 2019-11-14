@@ -3,11 +3,11 @@ services:
   dungeon-helper:
     build: .
     environment:
-    - DISCORD_BOT_ID
+    - DATABASE_PATH=/opt/dungeon-helper/var/dungeon-helper.db
     - DISCORD_TOKEN
     - MODEL_PATH=/opt/dungeon-helper/share/model
     - RUST_LOG=dungeon-helper=INFO
     volumes:
     - type: bind
-      source: ./model
+      source: ../snips-nlu-example/model
       target: /opt/dungeon-helper/share/model

@@ -1,11 +1,11 @@
 #!/bin/bash
 
-mkdir -p /opt/dungeon-helper/var/
+mkdir -p $(dirname "$DATABASE_PATH")
 
-if [ ! -f /opt/dungeon-helper/var/dungeon-helper.db ]; then
+if [ ! -f "$DATABASE_PATH" ]; then
   db_path=$(mktemp -d)
   cat /opt/dungeon-helper/share/sql/*.sql | sqlite3 $db_path/dungeon-helper.db
-  mv -n $db_path/dungeon-helper.db /opt/dungeon-helper/var/dungeon-helper.db
+  mv -n $db_path/dungeon-helper.db "$DATABASE_PATH"
   rmdir $db_path
 fi
 

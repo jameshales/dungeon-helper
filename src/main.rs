@@ -18,24 +18,24 @@ use r2d2_sqlite::SqliteConnectionManager;
 use serenity::prelude::Client;
 use snips_nlu_lib::SnipsNluEngine;
 use std::env;
+use std::sync::RwLock;
 
 fn main() {
     env_logger::init();
 
-    let bot_id = env::var("DISCORD_BOT_ID").expect("Expected a bot ID in the environment");
-
+    let database_path =
+        env::var("DATABASE_PATH").expect("Expected a database path in the environment");
     let token = env::var("DISCORD_TOKEN").expect("Expected a token in the environment");
-
     let model_path = env::var("MODEL_PATH").expect("Expected a model path in the environment");
 
     let engine = SnipsNluEngine::from_path(model_path).unwrap();
 
-    let manager = SqliteConnectionManager::file("dungeon-helper.db");
+    let manager = SqliteConnectionManager::file(database_path);
 
     let pool = Pool::new(manager).expect("Error creating connection pool");
 
     let handler = Handler {
-        bot_id,
+        bot_id: RwLock::new(None),
         engine,
         pool,
     };
