@@ -32,10 +32,9 @@ pub enum Command {
     HelpShorthand,
     Roll(crate::roll::Roll),
     Set(CharacterAttributeUpdate),
-    SetBotDisabled,
-    SetBotEnabled,
-    SetCharactersLocked,
-    SetCharactersUnlocked,
+    SetChannelEnabled(bool),
+    SetChannelLocked(bool),
+    SetChannelDiceOnly(bool),
     Show(CharacterAttribute),
     ShowError(Error),
     ShowWarning(String),
@@ -46,10 +45,9 @@ pub enum Command {
 impl Command {
     pub fn is_admin(&self) -> bool {
         match self {
-            Command::SetBotDisabled
-            | Command::SetBotEnabled
-            | Command::SetCharactersLocked
-            | Command::SetCharactersUnlocked => true,
+            Command::SetChannelDiceOnly(_)
+            | Command::SetChannelEnabled(_)
+            | Command::SetChannelLocked(_) => true,
             _ => false,
         }
     }

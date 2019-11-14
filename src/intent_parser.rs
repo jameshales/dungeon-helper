@@ -20,6 +20,12 @@ pub fn parse_intent_result(result: &IntentParserResult) -> Option<Command> {
             "rollSavingThrow" => parse_roll_saving_throw(&slots),
             "rollSkill" => parse_roll_skill(&slots),
             "setAbility" => parse_set_ability(&slots),
+            "setChannelDiceOnlyFalse" => Command::SetChannelDiceOnly(false),
+            "setChannelDiceOnlyTrue" => Command::SetChannelDiceOnly(true),
+            "setChannelEnabledFalse" => Command::SetChannelEnabled(false),
+            "setChannelEnabledTrue" => Command::SetChannelEnabled(true),
+            "setChannelLockedFalse" => Command::SetChannelLocked(true),
+            "setChannelLockedTrue" => Command::SetChannelLocked(false),
             "setJackOfAllTrades" => Command::Set(CharacterAttributeUpdate::JackOfAllTrades(true)),
             "setLevel" => parse_set_level(&slots),
             "setNotJackOfAllTrades" => {
@@ -27,10 +33,6 @@ pub fn parse_intent_result(result: &IntentParserResult) -> Option<Command> {
             }
             "setSavingThrow" => parse_set_saving_throw(&slots),
             "setSkill" => parse_set_skill(&slots),
-            "setBotDisabled" => Command::SetBotDisabled,
-            "setBotEnabled" => Command::SetBotEnabled,
-            "setCharactersLocked" => Command::SetCharactersLocked,
-            "setCharactersUnlocked" => Command::SetCharactersUnlocked,
             "showAbilities" => Command::ShowAbilities,
             "showAbility" => parse_show_ability(&slots),
             "showHelp" => Command::Help,
