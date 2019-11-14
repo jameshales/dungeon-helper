@@ -52,7 +52,7 @@ pub fn parse_intent_result(result: &IntentParserResult) -> Option<Command> {
 
 fn parse_roll_ability(slots: &Vec<Slot>) -> Command {
     let ability = extract_ability_slot(slots);
-    let condition = extract_condition_slot(slots).unwrap_or(Condition::Normal);
+    let condition = extract_condition_slot(slots);
     ability.map_or(
         Command::Clarification(format!("It looks like you're trying to roll an ability check, but I'm not sure which ability you want. Try \"Roll strength\", \"Dexterity check\", etc.")),
         |ability| {
@@ -66,7 +66,7 @@ fn parse_roll_ability(slots: &Vec<Slot>) -> Command {
 }
 
 fn parse_roll_dice(slots: &Vec<Slot>) -> Command {
-    let condition = extract_condition_slot(slots).unwrap_or(Condition::Normal);
+    let condition = extract_condition_slot(slots);
     let rolls = extract_usize_slot_value(slots, "rolls").unwrap_or(1);
     let sides = extract_die_slot(slots);
     sides.map_or(
@@ -92,7 +92,7 @@ fn parse_roll_dice(slots: &Vec<Slot>) -> Command {
 }
 
 fn parse_roll_initiative(slots: &Vec<Slot>) -> Command {
-    let condition = extract_condition_slot(slots).unwrap_or(Condition::Normal);
+    let condition = extract_condition_slot(slots);
     let roll = CharacterRoll {
         check: Check::Initiative,
         condition,
@@ -102,7 +102,7 @@ fn parse_roll_initiative(slots: &Vec<Slot>) -> Command {
 
 fn parse_roll_saving_throw(slots: &Vec<Slot>) -> Command {
     let ability = extract_ability_slot(slots);
-    let condition = extract_condition_slot(slots).unwrap_or(Condition::Normal);
+    let condition = extract_condition_slot(slots);
     ability.map_or(
         Command::Clarification(format!("It looks like you're trying to roll a saving throw, but I'm not sure what kind of saving throw you want. Try \"Roll strength saving throw\", \"Dexterity saving throw\", etc.")),
         |ability| {
@@ -116,7 +116,7 @@ fn parse_roll_saving_throw(slots: &Vec<Slot>) -> Command {
 }
 
 fn parse_roll_skill(slots: &Vec<Slot>) -> Command {
-    let condition = extract_condition_slot(slots).unwrap_or(Condition::Normal);
+    let condition = extract_condition_slot(slots);
     let skill = extract_skill_slot(slots);
     skill.map_or(
         Command::Clarification(format!("It looks like you're trying to roll a skill check, but I'm not sure what skill you want. Try \"Roll stealth\", \"Athletics check\", etc.")),
@@ -246,7 +246,6 @@ fn extract_condition_slot(slots: &Vec<Slot>) -> Option<Condition> {
     extract_custom_slot_value(slots, "condition").and_then(|value| match value.as_ref() {
         "advantage" => Some(Condition::Advantage),
         "disadvantage" => Some(Condition::Disadvantage),
-        "normal" => Some(Condition::Normal),
         _ => None,
     })
 }

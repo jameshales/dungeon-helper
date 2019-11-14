@@ -12,17 +12,6 @@ pub const MAXIMUM_ROLLS_DISPLAY: usize = 10;
 /// The maximum number of sides a die may have.
 pub const MAXIMUM_SIDES: i32 = 100;
 
-/// Determines the conditions under which a roll occurs - advantage, disadvantage, or normal.
-///
-/// A roll with advantage involves performing the roll twice and taking the highest result, whereas
-/// a roll with disadvantage involves performing the roll twice and taking the lowest result.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum Condition {
-    Advantage,
-    Normal,
-    Disadvantage,
-}
-
 /// Represents a dice roll that might occur in Dungeons and Dragons 5th edition.
 ///
 /// A dice roll involves rolling a number of dice, each with a number of sides. The sum of the
@@ -33,7 +22,17 @@ pub struct Roll {
     rolls: usize,
     sides: i32,
     modifier: i32,
-    condition: Condition,
+    condition: Option<Condition>,
+}
+
+/// Determines the conditions under which a roll occurs - advantage, disadvantage, or normal.
+///
+/// A roll with advantage involves performing the roll twice and taking the highest result, whereas
+/// a roll with disadvantage involves performing the roll twice and taking the lowest result.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum Condition {
+    Advantage,
+    Disadvantage,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -152,7 +151,7 @@ impl Roll {
         rolls: usize,
         sides: i32,
         modifier: i32,
-        condition: Condition,
+        condition: Option<Condition>,
     ) -> Result<Roll, Error> {
         if rolls <= 0 {
             Result::Err(Error::RollsNonPositive)
@@ -205,11 +204,11 @@ impl Roll {
                         }
                     })
                     .unwrap_or(0);
-                let condition = match captures.get(5).map(|m| m.as_str()) {
-                    Some("advantage") => Condition::Advantage,
-                    Some("disadvantage") => Condition::Disadvantage,
-                    _ => Condition::Normal,
-                };
+                let condition = captures.get(5).and_then(|m| match m.as_str() {
+                    "advantage" => Some(Condition::Advantage),
+                    "disadvantage" => Some(Condition::Disadvantage),
+                    _ => None
+                });
 
                 rolls.and_then(|rolls| sides.map(|sides| (rolls, sides, modifier, condition)))
             })
@@ -225,7 +224,7 @@ impl Roll {
         let first = self.roll_once(rng);
         let second = self.roll_once(rng);
         match self.condition {
-            Condition::Advantage => {
+            Some(Condition::Advantage) => {
                 let (primary, secondary) = if first.result > second.result {
                     (first, second)
                 } else {
@@ -236,11 +235,7 @@ impl Roll {
                     secondary: Some(secondary),
                 }
             }
-            Condition::Normal => ConditionalRollResult {
-                primary: first,
-                secondary: None,
-            },
-            Condition::Disadvantage => {
+            Some(Condition::Disadvantage) => {
                 let (primary, secondary) = if first.result < second.result {
                     (first, second)
                 } else {
@@ -251,6 +246,10 @@ impl Roll {
                     secondary: Some(secondary),
                 }
             }
+            None => ConditionalRollResult {
+                primary: first,
+                secondary: None,
+            },
         }
     }
 
@@ -298,9 +297,9 @@ impl fmt::Display for Roll {
                 Result::Ok(())
             })
             .and(match self.condition {
-                Condition::Advantage => write!(f, " with advantage"),
-                Condition::Normal => Result::Ok(()),
-                Condition::Disadvantage => write!(f, " with disadvantage"),
+                Some(Condition::Advantage) => write!(f, " with advantage"),
+                Some(Condition::Disadvantage) => write!(f, " with disadvantage"),
+                None => Result::Ok(()),
             })
     }
 }

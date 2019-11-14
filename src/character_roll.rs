@@ -6,7 +6,7 @@ use std::fmt;
 #[derive(Debug)]
 pub struct CharacterRoll {
     pub check: Check,
-    pub condition: Condition,
+    pub condition: Option<Condition>,
 }
 
 impl CharacterRoll {
@@ -18,11 +18,11 @@ impl CharacterRoll {
 
         RE.captures(string).and_then(|captures| {
             let check = captures.get(1).and_then(|m| Check::parse(m.as_str()))?;
-            let condition = match captures.get(2).map(|m| m.as_str()) {
-                Some("advantage") => Condition::Advantage,
-                Some("disadvantage") => Condition::Disadvantage,
-                _ => Condition::Normal,
-            };
+            let condition = captures.get(2).and_then(|m| match m.as_str() {
+                "advantage" => Some(Condition::Advantage),
+                "disadvantage" => Some(Condition::Disadvantage),
+                _ => None,
+            });
             Some(CharacterRoll { check, condition })
         })
     }
