@@ -92,6 +92,15 @@ impl fmt::Display for ConditionalRollResult {
                 write!(f, " / ~~{}~~", secondary)
             }),
         )
+        .and(
+            self.primary.critical.map_or(
+                Result::Ok(()),
+                |critical| match critical {
+                    Critical::Failure => write!(f, " — Critical Failure 😰"),
+                    Critical::Success => write!(f, " — Critical Success 🤩"),
+                }
+            )
+        )
     }
 }
 
@@ -252,9 +261,9 @@ impl Roll {
         let sum: i32 = dice.iter().sum();
         let result = sum + self.modifier;
         let critical = if self.rolls == 1 && self.sides == 20 {
-            if result == 1 {
+            if sum == 1 {
                 Some(Critical::Failure)
-            } else if result == 20 {
+            } else if sum == 20 {
                 Some(Critical::Success)
             } else {
                 None

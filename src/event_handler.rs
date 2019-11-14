@@ -7,7 +7,7 @@ use crate::command::{Command, Error};
 use crate::intent_logger::log_intent_result;
 use crate::intent_parser::parse_intent_result;
 use crate::roll::Roll;
-use log::{debug, error, info};
+use log::{error, info};
 use r2d2::{Pool, PooledConnection};
 use r2d2_sqlite::SqliteConnectionManager;
 use regex::Regex;
@@ -133,7 +133,6 @@ impl Handler {
 
         COMMAND_REGEX.captures(&message).and_then(|c| {
             let is_at_message = c.get(1).map_or(false, |m| m.as_str() == self.bot_id);
-            debug!(target: "dungeon-helper", "Is at message: {}; Is dice only: {}", is_at_message, dice_only);
             if dice_only || is_at_message {
                 c.get(2).map(|m| m.as_str().to_string())
             } else {
