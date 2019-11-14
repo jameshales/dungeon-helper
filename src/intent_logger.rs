@@ -13,17 +13,17 @@ pub fn log_intent_result(
     connection.transaction().and_then(|transaction| {
         intent_result
             .as_ref()
-            .map_or(Result::Ok(()), |intent_result| {
+            .map_or(Ok(()), |intent_result| {
                 log_message(&transaction, message, intent_result)
                     .and(intent_result.slots.iter().enumerate().fold(
-                        Result::Ok(()),
+                        Ok(()),
                         |result, (index, slot)| {
                             result
                                 .and(log_slot(&transaction, &message.id, index as i32, slot))
                                 .map(|_| ())
                         },
                     ))
-                    .and(Result::Ok(()))
+                    .and(Ok(()))
             })
             .and(transaction.commit())
     })

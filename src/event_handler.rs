@@ -77,9 +77,11 @@ impl Handler {
         let content = &message.content.trim();
         Command::parse_shorthand(content)
             .map(MessageCommand::Shorthand)
-            .or(self.parse_message(content, dice_only).map(|(command, intent_result)| {
-                MessageCommand::NaturalLanguage(command, intent_result)
-            }))
+            .or(self
+                .parse_message(content, dice_only)
+                .map(|(command, intent_result)| {
+                    MessageCommand::NaturalLanguage(command, intent_result)
+                }))
     }
 
     fn get_response(
@@ -110,7 +112,11 @@ impl Handler {
         }
     }
 
-    fn parse_message(&self, message: &str, dice_only: bool) -> Option<(Command, Option<IntentParserResult>)> {
+    fn parse_message(
+        &self,
+        message: &str,
+        dice_only: bool,
+    ) -> Option<(Command, Option<IntentParserResult>)> {
         self.extract_at_message(message, dice_only).map(|at_message| {
             self.engine.parse(at_message.trim(), None, None)
                 .map(

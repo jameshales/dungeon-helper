@@ -22,3 +22,6 @@ snips-nlu-ontology = { git = "https://github.com/snipsco/snips-nlu-ontology", ta
 [dependencies.rusqlite]
 version = "0.20"
 features = ["chrono"]
+
+[dev-dependencies]
+rand_pcg = "0.2"

@@ -19,7 +19,7 @@ impl Channel {
     }
 
     fn from_row(row: &Row) -> RusqliteResult<Channel> {
-        Result::Ok(Channel {
+        Ok(Channel {
             enabled: row.get("enabled")?,
             locked: row.get("locked")?,
             dice_only: row.get("dice_only")?,

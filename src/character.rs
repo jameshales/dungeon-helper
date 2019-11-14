@@ -110,7 +110,7 @@ pub struct Character {
 
 impl Character {
     pub fn from_row(row: &Row) -> RusqliteResult<Character> {
-        Result::Ok(Character {
+        Ok(Character {
             level: row.get("level")?,
             jack_of_all_trades: row.get("jack_of_all_trades")?,
 
