@@ -7,6 +7,7 @@
 ### Requirements
 
 - [Rust](https://www.rust-lang.org/) >= 0.28
+- [SQLite](https://www.sqlite.org/) >= 3.24.0
 
 ### Create an application in Discord
 
@@ -37,7 +38,10 @@ In a local command-line environment:
     ```
     export DISCORD_TOKEN=...
     ```
-3.  Run the application.
+3.  Set the `DATABASE_PATH` to the path of a SQLite database, initialised with the SQL schema in `./config/sql/`.
+4.  Set the `MODEL_PATH` to the path of a trained Snips NLU model.
+5.  Set `RUST_LOG=dungeon_helper=info` to enable logging.
+6.  Run the application.
 
     ```
     ./target/release/dungeon_helper
