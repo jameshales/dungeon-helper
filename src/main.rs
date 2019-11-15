@@ -6,9 +6,11 @@ mod channel;
 mod character;
 mod character_roll;
 mod command;
+mod error;
 mod event_handler;
 mod intent_logger;
 mod intent_parser;
+mod response;
 mod roll;
 
 use crate::event_handler::Handler;

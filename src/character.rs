@@ -5,67 +5,10 @@ use serenity::model::id::{ChannelId, UserId};
 use std::error;
 use std::fmt;
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum Proficiency {
-    Normal,
-    Proficient,
-    Expert,
-}
-
-impl Proficiency {
-    pub fn parse(string: &str) -> Option<Proficiency> {
-        match string.to_lowercase().as_ref() {
-            "normal" => Some(Proficiency::Normal),
-            "proficient" => Some(Proficiency::Proficient),
-            "expert" => Some(Proficiency::Expert),
-            _ => None,
-        }
-    }
-
-    pub fn as_str(&self) -> &str {
-        match self {
-            Proficiency::Normal => "Normal",
-            Proficiency::Proficient => "Proficient",
-            Proficiency::Expert => "Expert",
-        }
-    }
-}
-
-impl FromSql for Proficiency {
-    fn column_result(value: ValueRef) -> FromSqlResult<Proficiency> {
-        value.as_str().and_then(|string| {
-            Proficiency::parse(string).ok_or(FromSqlError::Other(Box::new(
-                InvalidProficiencyValueError {
-                    value: string.to_string(),
-                },
-            )))
-        })
-    }
-}
-
-impl ToSql for Proficiency {
-    fn to_sql(&self) -> RusqliteResult<ToSqlOutput> {
-        self.as_str().to_sql()
-    }
-}
-
-#[derive(Debug)]
-struct InvalidProficiencyValueError {
-    value: String,
-}
-
-impl fmt::Display for InvalidProficiencyValueError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Invalid value for proficiency (value = {})", self.value)
-    }
-}
-
-impl error::Error for InvalidProficiencyValueError {
-    fn source(&self) -> Option<&(dyn error::Error + 'static)> {
-        None
-    }
-}
-
+/// A character in a Dungeons and Dragons campaign.
+///
+/// The character has a number of base abilities and proficiencies, from which ability and
+/// skill modifiers are calculated.
 #[derive(Debug, Eq, PartialEq)]
 pub struct Character {
     level: Option<i32>,
@@ -109,46 +52,6 @@ pub struct Character {
 }
 
 impl Character {
-    pub fn from_row(row: &Row) -> RusqliteResult<Character> {
-        Ok(Character {
-            level: row.get("level")?,
-            jack_of_all_trades: row.get("jack_of_all_trades")?,
-
-            strength: row.get("strength")?,
-            dexterity: row.get("dexterity")?,
-            constitution: row.get("constitution")?,
-            intelligence: row.get("intelligence")?,
-            wisdom: row.get("wisdom")?,
-            charisma: row.get("charisma")?,
-
-            strength_saving_proficiency: row.get("strength_saving_proficiency")?,
-            dexterity_saving_proficiency: row.get("dexterity_saving_proficiency")?,
-            constitution_saving_proficiency: row.get("constitution_saving_proficiency")?,
-            intelligence_saving_proficiency: row.get("intelligence_saving_proficiency")?,
-            wisdom_saving_proficiency: row.get("wisdom_saving_proficiency")?,
-            charisma_saving_proficiency: row.get("charisma_saving_proficiency")?,
-
-            acrobatics_proficiency: row.get("acrobatics_proficiency")?,
-            animal_handling_proficiency: row.get("animal_handling_proficiency")?,
-            arcana_proficiency: row.get("arcana_proficiency")?,
-            athletics_proficiency: row.get("athletics_proficiency")?,
-            deception_proficiency: row.get("deception_proficiency")?,
-            history_proficiency: row.get("history_proficiency")?,
-            insight_proficiency: row.get("insight_proficiency")?,
-            intimidation_proficiency: row.get("intimidation_proficiency")?,
-            investigation_proficiency: row.get("investigation_proficiency")?,
-            medicine_proficiency: row.get("medicine_proficiency")?,
-            nature_proficiency: row.get("nature_proficiency")?,
-            perception_proficiency: row.get("perception_proficiency")?,
-            performance_proficiency: row.get("performance_proficiency")?,
-            persuasion_proficiency: row.get("persuasion_proficiency")?,
-            religion_proficiency: row.get("religion_proficiency")?,
-            sleight_of_hand_proficiency: row.get("sleight_of_hand_proficiency")?,
-            stealth_proficiency: row.get("stealth_proficiency")?,
-            survival_proficiency: row.get("survival_proficiency")?,
-        })
-    }
-
     pub fn get(
         connection: &Connection,
         channel_id: &ChannelId,
@@ -196,6 +99,46 @@ impl Character {
         )
     }
 
+    pub fn from_row(row: &Row) -> RusqliteResult<Character> {
+        Ok(Character {
+            level: row.get("level")?,
+            jack_of_all_trades: row.get("jack_of_all_trades")?,
+
+            strength: row.get("strength")?,
+            dexterity: row.get("dexterity")?,
+            constitution: row.get("constitution")?,
+            intelligence: row.get("intelligence")?,
+            wisdom: row.get("wisdom")?,
+            charisma: row.get("charisma")?,
+
+            strength_saving_proficiency: row.get("strength_saving_proficiency")?,
+            dexterity_saving_proficiency: row.get("dexterity_saving_proficiency")?,
+            constitution_saving_proficiency: row.get("constitution_saving_proficiency")?,
+            intelligence_saving_proficiency: row.get("intelligence_saving_proficiency")?,
+            wisdom_saving_proficiency: row.get("wisdom_saving_proficiency")?,
+            charisma_saving_proficiency: row.get("charisma_saving_proficiency")?,
+
+            acrobatics_proficiency: row.get("acrobatics_proficiency")?,
+            animal_handling_proficiency: row.get("animal_handling_proficiency")?,
+            arcana_proficiency: row.get("arcana_proficiency")?,
+            athletics_proficiency: row.get("athletics_proficiency")?,
+            deception_proficiency: row.get("deception_proficiency")?,
+            history_proficiency: row.get("history_proficiency")?,
+            insight_proficiency: row.get("insight_proficiency")?,
+            intimidation_proficiency: row.get("intimidation_proficiency")?,
+            investigation_proficiency: row.get("investigation_proficiency")?,
+            medicine_proficiency: row.get("medicine_proficiency")?,
+            nature_proficiency: row.get("nature_proficiency")?,
+            perception_proficiency: row.get("perception_proficiency")?,
+            performance_proficiency: row.get("performance_proficiency")?,
+            persuasion_proficiency: row.get("persuasion_proficiency")?,
+            religion_proficiency: row.get("religion_proficiency")?,
+            sleight_of_hand_proficiency: row.get("sleight_of_hand_proficiency")?,
+            stealth_proficiency: row.get("stealth_proficiency")?,
+            survival_proficiency: row.get("survival_proficiency")?,
+        })
+    }
+
     pub fn level(&self) -> Option<i32> {
         self.level
     }
@@ -240,11 +183,15 @@ impl Character {
 
     // Abilities
 
-    fn make_ability(score: Option<i32>) -> Option<Ability> {
-        Some(Ability {
-            score: score?,
-            modifier: (score? - 10) / 2,
-        })
+    pub fn ability(&self, name: AbilityName) -> Option<Ability> {
+        match name {
+            AbilityName::Strength => self.strength(),
+            AbilityName::Dexterity => self.dexterity(),
+            AbilityName::Constitution => self.constitution(),
+            AbilityName::Intelligence => self.intelligence(),
+            AbilityName::Wisdom => self.wisdom(),
+            AbilityName::Charisma => self.charisma(),
+        }
     }
 
     pub fn strength(&self) -> Option<Ability> {
@@ -271,15 +218,11 @@ impl Character {
         Character::make_ability(self.charisma)
     }
 
-    pub fn ability(&self, name: AbilityName) -> Option<Ability> {
-        match name {
-            AbilityName::Strength => self.strength(),
-            AbilityName::Dexterity => self.dexterity(),
-            AbilityName::Constitution => self.constitution(),
-            AbilityName::Intelligence => self.intelligence(),
-            AbilityName::Wisdom => self.wisdom(),
-            AbilityName::Charisma => self.charisma(),
-        }
+    fn make_ability(score: Option<i32>) -> Option<Ability> {
+        Some(Ability {
+            score: score?,
+            modifier: (score? - 10) / 2,
+        })
     }
 
     pub fn passive_ability(&self, name: AbilityName) -> Option<i32> {
@@ -306,20 +249,15 @@ impl Character {
 
     // Saving Throws
 
-    fn make_saving_throw(
-        &self,
-        ability: Option<Ability>,
-        proficiency: bool,
-    ) -> Option<SavingThrow> {
-        let bonus = if proficiency {
-            self.proficiency_bonus()?
-        } else {
-            0
-        };
-        Some(SavingThrow {
-            modifier: ability?.modifier + bonus,
-            proficiency,
-        })
+    pub fn saving_throw(&self, name: AbilityName) -> Option<SavingThrow> {
+        match name {
+            AbilityName::Strength => self.strength_saving_throw(),
+            AbilityName::Dexterity => self.dexterity_saving_throw(),
+            AbilityName::Constitution => self.constitution_saving_throw(),
+            AbilityName::Intelligence => self.intelligence_saving_throw(),
+            AbilityName::Wisdom => self.wisdom_saving_throw(),
+            AbilityName::Charisma => self.charisma_saving_throw(),
+        }
     }
 
     pub fn strength_saving_throw(&self) -> Option<SavingThrow> {
@@ -346,15 +284,20 @@ impl Character {
         self.make_saving_throw(self.charisma(), self.charisma_saving_proficiency)
     }
 
-    pub fn saving_throw(&self, name: AbilityName) -> Option<SavingThrow> {
-        match name {
-            AbilityName::Strength => self.strength_saving_throw(),
-            AbilityName::Dexterity => self.dexterity_saving_throw(),
-            AbilityName::Constitution => self.constitution_saving_throw(),
-            AbilityName::Intelligence => self.intelligence_saving_throw(),
-            AbilityName::Wisdom => self.wisdom_saving_throw(),
-            AbilityName::Charisma => self.charisma_saving_throw(),
-        }
+    fn make_saving_throw(
+        &self,
+        ability: Option<Ability>,
+        proficiency: bool,
+    ) -> Option<SavingThrow> {
+        let bonus = if proficiency {
+            self.proficiency_bonus()?
+        } else {
+            0
+        };
+        Some(SavingThrow {
+            modifier: ability?.modifier + bonus,
+            proficiency,
+        })
     }
 
     pub fn set_saving_throw(
@@ -373,18 +316,31 @@ impl Character {
 
     // Skills
 
-    fn make_skill(&self, ability: Option<Ability>, proficiency: Proficiency) -> Option<Skill> {
-        let proficiency_bonus = self.proficiency_bonus()?;
-        let bonus = match proficiency {
-            Proficiency::Normal if !self.jack_of_all_trades => 0,
-            Proficiency::Normal => proficiency_bonus / 2,
-            Proficiency::Proficient => proficiency_bonus,
-            Proficiency::Expert => 2 * proficiency_bonus,
-        };
-        Some(Skill {
-            modifier: ability?.modifier + bonus,
-            proficiency,
-        })
+    pub fn skill(&self, name: SkillName) -> Option<Skill> {
+        match name {
+            SkillName::Acrobatics => self.acrobatics(),
+            SkillName::AnimalHandling => self.animal_handling(),
+            SkillName::Arcana => self.arcana(),
+            SkillName::Athletics => self.athletics(),
+            SkillName::Deception => self.deception(),
+            SkillName::History => self.history(),
+            SkillName::Insight => self.insight(),
+            SkillName::Intimidation => self.intimidation(),
+            SkillName::Investigation => self.investigation(),
+            SkillName::Medicine => self.medicine(),
+            SkillName::Nature => self.nature(),
+            SkillName::Perception => self.perception(),
+            SkillName::Performance => self.performance(),
+            SkillName::Persuasion => self.persuasion(),
+            SkillName::Religion => self.religion(),
+            SkillName::SleightOfHand => self.sleight_of_hand(),
+            SkillName::Stealth => self.stealth(),
+            SkillName::Survival => self.survival(),
+        }
+    }
+
+    pub fn passive_skill(&self, name: SkillName) -> Option<i32> {
+        self.skill(name).map(|s| 10 + s.modifier)
     }
 
     pub fn acrobatics(&self) -> Option<Skill> {
@@ -459,31 +415,18 @@ impl Character {
         self.make_skill(self.wisdom(), self.survival_proficiency)
     }
 
-    pub fn skill(&self, name: SkillName) -> Option<Skill> {
-        match name {
-            SkillName::Acrobatics => self.acrobatics(),
-            SkillName::AnimalHandling => self.animal_handling(),
-            SkillName::Arcana => self.arcana(),
-            SkillName::Athletics => self.athletics(),
-            SkillName::Deception => self.deception(),
-            SkillName::History => self.history(),
-            SkillName::Insight => self.insight(),
-            SkillName::Intimidation => self.intimidation(),
-            SkillName::Investigation => self.investigation(),
-            SkillName::Medicine => self.medicine(),
-            SkillName::Nature => self.nature(),
-            SkillName::Perception => self.perception(),
-            SkillName::Performance => self.performance(),
-            SkillName::Persuasion => self.persuasion(),
-            SkillName::Religion => self.religion(),
-            SkillName::SleightOfHand => self.sleight_of_hand(),
-            SkillName::Stealth => self.stealth(),
-            SkillName::Survival => self.survival(),
-        }
-    }
-
-    pub fn passive_skill(&self, name: SkillName) -> Option<i32> {
-        self.skill(name).map(|s| 10 + s.modifier)
+    fn make_skill(&self, ability: Option<Ability>, proficiency: Proficiency) -> Option<Skill> {
+        let proficiency_bonus = self.proficiency_bonus()?;
+        let bonus = match proficiency {
+            Proficiency::Normal if !self.jack_of_all_trades => 0,
+            Proficiency::Normal => proficiency_bonus / 2,
+            Proficiency::Proficient => proficiency_bonus,
+            Proficiency::Expert => 2 * proficiency_bonus,
+        };
+        Some(Skill {
+            modifier: ability?.modifier + bonus,
+            proficiency,
+        })
     }
 
     pub fn set_skill(
@@ -562,6 +505,67 @@ impl Character {
                 Character::set_skill(transaction, channel_id, user_id, name, proficiency)
             }
         }
+    }
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum Proficiency {
+    Normal,
+    Proficient,
+    Expert,
+}
+
+impl Proficiency {
+    pub fn parse(string: &str) -> Option<Proficiency> {
+        match string.to_lowercase().as_ref() {
+            "normal" => Some(Proficiency::Normal),
+            "proficient" => Some(Proficiency::Proficient),
+            "expert" => Some(Proficiency::Expert),
+            _ => None,
+        }
+    }
+
+    pub fn as_str(&self) -> &str {
+        match self {
+            Proficiency::Normal => "Normal",
+            Proficiency::Proficient => "Proficient",
+            Proficiency::Expert => "Expert",
+        }
+    }
+}
+
+impl FromSql for Proficiency {
+    fn column_result(value: ValueRef) -> FromSqlResult<Proficiency> {
+        value.as_str().and_then(|string| {
+            Proficiency::parse(string).ok_or(FromSqlError::Other(Box::new(
+                InvalidProficiencyValueError {
+                    value: string.to_string(),
+                },
+            )))
+        })
+    }
+}
+
+impl ToSql for Proficiency {
+    fn to_sql(&self) -> RusqliteResult<ToSqlOutput> {
+        self.as_str().to_sql()
+    }
+}
+
+#[derive(Debug)]
+struct InvalidProficiencyValueError {
+    value: String,
+}
+
+impl fmt::Display for InvalidProficiencyValueError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Invalid value for proficiency (value = {})", self.value)
+    }
+}
+
+impl error::Error for InvalidProficiencyValueError {
+    fn source(&self) -> Option<&(dyn error::Error + 'static)> {
+        None
     }
 }
 

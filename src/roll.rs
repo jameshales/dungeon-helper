@@ -132,14 +132,13 @@ pub enum Error {
     SidesTooGreat,
 }
 
-impl Error {
-    /// Returns a human-friendly explanation of the error.
-    pub fn message(&self) -> &str {
+impl fmt::Display for Error {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Error::RollsNonPositive => "Must roll at least one die",
-            Error::RollsTooGreat => "Must roll no more than 100 dice.",
-            Error::SidesNonPositive => "Dice must have at least one side.",
-            Error::SidesTooGreat => "Dice must have no more than 100 sides.",
+            Error::RollsNonPositive => write!(f, "Must roll at least one die"),
+            Error::RollsTooGreat => write!(f, "Must roll no more than 100 dice."),
+            Error::SidesNonPositive => write!(f, "Dice must have at least one side."),
+            Error::SidesTooGreat => write!(f, "Dice must have no more than 100 sides."),
         }
     }
 }
@@ -151,12 +150,11 @@ pub enum ParserError {
     InvalidValue(Error),
 }
 
-impl ParserError {
-    /// Returns a human-friendly explanation of the error.
-    pub fn message(&self) -> &str {
+impl fmt::Display for ParserError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            ParserError::InvalidSyntax => "Invalid syntax.",
-            ParserError::InvalidValue(e) => e.message(),
+            ParserError::InvalidSyntax => write!(f, "Invalid syntax."),
+            ParserError::InvalidValue(e) => e.fmt(f),
         }
     }
 }

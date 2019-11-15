@@ -3,14 +3,15 @@ use crate::character::{
     Ability, Character, CharacterAttribute, CharacterAttributeUpdate, SavingThrow, Skill,
 };
 use crate::character_roll::CharacterRoll;
-use crate::command::{Command, Error};
+use crate::command;
+use crate::command::{Command, CommandResult};
+use crate::error::Error;
 use crate::intent_logger::log_intent_result;
-use crate::intent_parser::parse_intent_result;
+use crate::response::Response;
 use crate::roll::Roll;
 use log::{error, info};
 use r2d2::{Pool, PooledConnection};
 use r2d2_sqlite::SqliteConnectionManager;
-use regex::Regex;
 use rusqlite::Result as RusqliteResult;
 use snips_nlu_lib::SnipsNluEngine;
 use snips_nlu_ontology::IntentParserResult;
@@ -21,7 +22,7 @@ use serenity::{
     model::{
         channel::Message,
         gateway::Ready,
-        id::{ChannelId, MessageId, UserId},
+        id::{ChannelId, UserId},
     },
     prelude::*,
 };
@@ -32,34 +33,13 @@ const CHARACTER_NOT_FOUND_WARNING_TEXT: &str =
 const ABILITY_NOT_SET_WARNING_TEXT: &str =
     "Couldn't find required ability scores for character. Try setting some ability scores and a character level first.";
 
-enum Response {
-    Clarification(String),
-    DiceRoll(String),
-    Error(Error),
-    Help(String),
-    Show(String),
-    Update(String),
-    Warning(String),
-}
-
-impl Response {
-    pub fn as_str(&self, author_id: &UserId, message_id: &MessageId) -> String {
-        match self {
-            Response::Clarification(message) => format!("📎 <@{}> {}", author_id, message),
-            Response::DiceRoll(message) => format!("🎲 <@{}> {}", author_id, message),
-            Response::Error(error) => {
-                error!(target: "dungeon-helper", "Error processing command. Message ID: {}; Error = {:?}", message_id, error);
-                format!(
-                    "💥 <@{}> **Error:** A technical error has occurred. Reference ID: {}",
-                    author_id, message_id
-                )
-            }
-            Response::Help(message) => format!("🎱 <@{}> {}", author_id, message),
-            Response::Show(message) => format!("<@{}> {}", author_id, message),
-            Response::Update(message) => format!("💾 <@{}> {}", author_id, message),
-            Response::Warning(message) => format!("⚠️ <@{}> {}", author_id, message),
-        }
-    }
+enum Action {
+    IgnoreChannelDisabled,
+    IgnoreChannelLocked,
+    IgnoreCommandAdmin,
+    IgnoreCommandMissing,
+    IgnoreOwnMessage,
+    Respond(Response),
 }
 
 pub struct Handler {
@@ -69,18 +49,65 @@ pub struct Handler {
 }
 
 impl Handler {
-    fn get_message_command(&self, message: &Message, dice_only: bool) -> Option<MessageCommand> {
+    fn get_command(
+        &self,
+        engine: &SnipsNluEngine,
+        message: &Message,
+        dice_only: bool,
+    ) -> Option<Result<CommandResult, command::Error>> {
         let content = &message.content.trim();
-        Command::parse_shorthand(content)
-            .map(MessageCommand::Shorthand)
-            .or(self
-                .parse_message(content, dice_only)
-                .map(|(command, intent_result)| {
-                    MessageCommand::NaturalLanguage(command, intent_result)
-                }))
+        self.bot_id
+            .try_read()
+            .ok()
+            .and_then(|bot_id| {
+                bot_id
+                    .as_ref()
+                    .map(|bot_id| Command::parse(engine, content, Some(&bot_id), dice_only))
+            })
+            .unwrap_or(Command::parse(engine, content, None, dice_only))
     }
 
-    fn get_response(
+    fn get_action(
+        &self,
+        command_result: Option<Result<CommandResult, command::Error>>,
+        channel: &Channel,
+        message: &Message,
+        is_admin: bool,
+    ) -> Action {
+        command_result.map_or(Action::IgnoreCommandMissing, |command_result| {
+            command_result
+                .map(|command_result| {
+                    let command = match command_result {
+                        CommandResult::Shorthand(command) => command,
+                        CommandResult::NaturalLanguage(command, intent_result) => {
+                            self.log_intent_result(&message, &intent_result);
+                            command
+                        }
+                    };
+                    match command {
+                        Ok(command) => {
+                            if !is_admin && !channel.enabled {
+                                Action::IgnoreChannelDisabled
+                            } else if !is_admin && channel.locked && command.is_editing() {
+                                Action::IgnoreChannelLocked
+                            } else if !is_admin && command.is_admin() {
+                                Action::IgnoreCommandAdmin
+                            } else {
+                                Action::Respond(self.run_command(
+                                    command,
+                                    &message.channel_id,
+                                    &message.author.id,
+                                ))
+                            }
+                        }
+                        Err(error) => Action::Respond(Response::Clarification(error.to_string())),
+                    }
+                })
+                .unwrap_or_else(|error| Action::Respond(error.into_response()))
+        })
+    }
+
+    fn run_command(
         &self,
         command: Command,
         channel_id: &ChannelId,
@@ -90,7 +117,6 @@ impl Handler {
             Command::CharacterRoll(roll) => {
                 self.get_character_roll_response(&roll, channel_id, author_id)
             }
-            Command::Clarification(message) => Response::Clarification(message),
             Command::Help => self.help(),
             Command::HelpShorthand => self.help_shorthand(),
             Command::Roll(roll) => Handler::roll(roll),
@@ -101,57 +127,12 @@ impl Handler {
             Command::SetChannelEnabled(enabled) => self.set_channel_enabled(channel_id, enabled),
             Command::SetChannelLocked(locked) => self.set_channel_locked(channel_id, locked),
             Command::Show(attribute) => self.show(&attribute, channel_id, author_id),
-            Command::ShowError(error) => Response::Error(error),
-            Command::ShowWarning(message) => Response::Warning(message),
             Command::ShowAbilities => self.show_abilities(channel_id, author_id),
             Command::ShowSkills => self.show_skills(channel_id, author_id),
         }
     }
 
-    fn parse_message(
-        &self,
-        message: &str,
-        dice_only: bool,
-    ) -> Option<(Command, Option<IntentParserResult>)> {
-        self.extract_at_message(message, dice_only).map(|at_message| {
-            self.engine.parse(at_message.trim(), None, None)
-                .map(
-                    |result| {
-                        let command = parse_intent_result(&result).map_or(
-                            Command::Clarification("I'm not sure what you mean. Try asking again with a different or simpler phrasing. Try asking for help to see some examples.".to_string()),
-                            identity
-                        );
-                        (command, Some(result))
-                    }
-                )
-                .unwrap_or_else(|error| (Command::ShowError(Error::IntentParserError(error)), None))
-        })
-    }
-
-    fn extract_at_message(&self, message: &str, dice_only: bool) -> Option<String> {
-        lazy_static! {
-            static ref COMMAND_REGEX: Regex = Regex::new(r"^(?:<@!?(\d+)> *)?(.*)$").unwrap();
-        }
-
-        let bot_id = self.bot_id.try_read().ok();
-
-        COMMAND_REGEX.captures(&message).and_then(|c| {
-            let is_at_message = c.get(1).map_or(false, |m| {
-                bot_id.map_or(false, |bot_id| *bot_id == Some(m.as_str().to_string()))
-            });
-            if dice_only || is_at_message {
-                c.get(2).map(|m| m.as_str().to_string())
-            } else {
-                None
-            }
-        })
-    }
-
-    fn log_intent_result(
-        &self,
-        message: &Message,
-        intent_result: &Option<IntentParserResult>,
-    ) -> () {
+    fn log_intent_result(&self, message: &Message, intent_result: &IntentParserResult) -> () {
         self.pool
             .get()
             .map_err(|error| error!(target: "dungeon-helper", "Error obtaining database connection. Message ID: {}; Error: {}", message.id, error))
@@ -462,53 +443,59 @@ impl Handler {
     }
 }
 
-enum MessageCommand {
-    Shorthand(Command),
-    NaturalLanguage(Command, Option<IntentParserResult>),
-}
-
 impl EventHandler for Handler {
     fn message(&self, ctx: Context, message: Message) {
-        if message.is_own(&ctx.cache) {
+        info!(target: "dungeon-helper", "Received message. Message ID: {}; Content: {}", message.id, message.content.escape_debug());
+        let action = if message.is_own(&ctx.cache) {
             // Don't respond to our own messages, this may cause an infinite loop
-            info!(target: "dungeon-helper", "Sent message. Message ID: {}; Content: {}", message.id, message.content.escape_debug());
+            Action::IgnoreOwnMessage
         } else {
-            info!(target: "dungeon-helper", "Received message. Message ID: {}; Content: {}", message.id, message.content.escape_debug());
             let channel = self.get_channel(&message.channel_id);
-            self.get_message_command(&message, channel.dice_only).map_or_else(
-                || info!(target: "dungeon-helper", "Message contains no command. Message ID: {}", message.id),
-                |message_command| {
-                    let command = match message_command {
-                        MessageCommand::Shorthand(command) => {
-                            info!(target: "dungeon-helper", "Handling shorthand command. Message ID: {}", message.id);
-                            command
-                        }
-                        MessageCommand::NaturalLanguage(command, intent_result) => {
-                            info!(target: "dungeon-helper", "Handling natural language command. Message ID: {}", message.id);
-                            self.log_intent_result(&message, &intent_result);
-                            command
-                        }
-                    };
-                    info!(target: "dungeon-helper", "Parsed command. Message ID: {}; Command: {:?}", message.id, command);
-                    let is_admin = message.member(&ctx.cache).map_or(true, |member| member.permissions(&ctx.cache).ok().map_or(false, |permissions| permissions.administrator()));
-                    if !is_admin && !channel.enabled {
-                        info!(target: "dungeon-helper", "Ignoring command because Dungeon Helper is disabled in current channel. Message ID: {}", message.id);
-                    } else if !is_admin && channel.locked && command.is_editing() {
-                        info!(target: "dungeon-helper", "Ignoring command because editing is locked in current channel. Message ID: {}", message.id);
-                    } else if !is_admin && command.is_admin() {
-                        info!(target: "dungeon-helper", "Ignoring command because it is an admin command and the current user is not an admin. Message ID: {}", message.id);
-                    } else {
-                        let response = self.get_response(command, &message.channel_id, &message.author.id);
-                        if let Err(why) = message
-                            .channel_id
-                            .say(&ctx.http, response.as_str(&message.author.id, &message.id))
-                        {
-                            error!(target: "dungeon-helper", "Error sending message: Message ID: {}, Error: {:?}", message.id, why);
-                        }
+            let is_admin = message.member(&ctx.cache).map_or(true, |member| {
+                member
+                    .permissions(&ctx.cache)
+                    .ok()
+                    .map_or(false, |permissions| permissions.administrator())
+            });
+            let command_result = self.get_command(&self.engine, &message, channel.dice_only);
+            self.get_action(command_result, &channel, &message, is_admin)
+        };
+        match action {
+            Action::IgnoreChannelDisabled => {
+                info!(target: "dungeon-helper", "Ignoring command because Dungeon Helper is disabled in current channel. Message ID: {}", message.id);
+            }
+            Action::IgnoreChannelLocked => {
+                info!(target: "dungeon-helper", "Ignoring command because editing is locked in current channel. Message ID: {}", message.id);
+            }
+            Action::IgnoreCommandAdmin => {
+                info!(target: "dungeon-helper", "Ignoring command because it is an admin command and the current user is not an admin. Message ID: {}", message.id);
+            }
+            Action::IgnoreCommandMissing => {
+                info!(target: "dungeon-helper", "Ignoring message becuase it contains no command. Message ID: {}", message.id);
+            }
+            Action::IgnoreOwnMessage => {
+                info!(target: "dungeon-helper", "Ignoring message because it was sent by us. Message ID: {}", message.id);
+            }
+            Action::Respond(response) => {
+                match &response {
+                    Response::Error(error) => {
+                        error!(target: "dungeon-helper", "Error processing command. Message ID: {}; Error = {:?}", message.id, error);
+                    },
+                    _ => ()
+                };
+                let result = message
+                    .channel_id
+                    .say(&ctx.http, response.render(&message.author.id, &message.id));
+                match result {
+                    Ok(sent_message) => {
+                        info!(target: "dungeon-helper", "Sent message. Message ID: {}, Sent Message ID: {}; Content: {}", message.id, sent_message.id, sent_message.content)
+                    }
+                    Err(error) => {
+                        error!(target: "dungeon-helper", "Error sending message. Message ID: {}, Error: {:?}", message.id, error)
                     }
                 }
-            )
-        }
+            }
+        };
     }
 
     fn ready(&self, _: Context, ready: Ready) {

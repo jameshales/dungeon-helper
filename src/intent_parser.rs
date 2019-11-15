@@ -2,93 +2,77 @@ use crate::character::{
     AbilityName, CharacterAttribute, CharacterAttributeUpdate, Proficiency, SkillName,
 };
 use crate::character_roll::{CharacterRoll, Check};
-use crate::command;
-use crate::command::Command;
-use crate::roll::{Condition, Error, Roll};
+use crate::command::{Command, Error};
+use crate::roll::{Condition, Roll};
 use snips_nlu_ontology::{IntentParserResult, Slot, SlotValue};
 use std::convert::TryFrom;
 
-pub fn parse_intent_result(result: &IntentParserResult) -> Option<Command> {
+pub fn parse_intent_result(result: &IntentParserResult) -> Result<Command, Error> {
     let IntentParserResult { intent, slots, .. } = result;
     intent
         .intent_name
         .as_ref()
-        .map(|intent_name| match intent_name.as_ref() {
+        .ok_or(Error::NoIntent)
+        .and_then(|intent_name| match intent_name.as_ref() {
             "rollAbility" => parse_roll_ability(&slots),
             "rollDice" => parse_roll_dice(&slots),
-            "rollInitiative" => parse_roll_initiative(&slots),
+            "rollInitiative" => Ok(parse_roll_initiative(&slots)),
             "rollSavingThrow" => parse_roll_saving_throw(&slots),
             "rollSkill" => parse_roll_skill(&slots),
             "setAbility" => parse_set_ability(&slots),
-            "setChannelDiceOnlyFalse" => Command::SetChannelDiceOnly(false),
-            "setChannelDiceOnlyTrue" => Command::SetChannelDiceOnly(true),
-            "setChannelEnabledFalse" => Command::SetChannelEnabled(false),
-            "setChannelEnabledTrue" => Command::SetChannelEnabled(true),
-            "setChannelLockedFalse" => Command::SetChannelLocked(true),
-            "setChannelLockedTrue" => Command::SetChannelLocked(false),
-            "setJackOfAllTrades" => Command::Set(CharacterAttributeUpdate::JackOfAllTrades(true)),
+            "setChannelDiceOnlyFalse" => Ok(Command::SetChannelDiceOnly(false)),
+            "setChannelDiceOnlyTrue" => Ok(Command::SetChannelDiceOnly(true)),
+            "setChannelEnabledFalse" => Ok(Command::SetChannelEnabled(false)),
+            "setChannelEnabledTrue" => Ok(Command::SetChannelEnabled(true)),
+            "setChannelLockedFalse" => Ok(Command::SetChannelLocked(true)),
+            "setChannelLockedTrue" => Ok(Command::SetChannelLocked(false)),
+            "setJackOfAllTrades" => Ok(Command::Set(CharacterAttributeUpdate::JackOfAllTrades(
+                true,
+            ))),
             "setLevel" => parse_set_level(&slots),
-            "setNotJackOfAllTrades" => {
-                Command::Set(CharacterAttributeUpdate::JackOfAllTrades(false))
-            }
+            "setNotJackOfAllTrades" => Ok(Command::Set(CharacterAttributeUpdate::JackOfAllTrades(
+                false,
+            ))),
             "setSavingThrow" => parse_set_saving_throw(&slots),
             "setSkill" => parse_set_skill(&slots),
-            "showAbilities" => Command::ShowAbilities,
+            "showAbilities" => Ok(Command::ShowAbilities),
             "showAbility" => parse_show_ability(&slots),
-            "showHelp" => Command::Help,
-            "showInitiative" => Command::Show(CharacterAttribute::Initiative),
-            "showJackOfAllTrades" => Command::Show(CharacterAttribute::JackOfAllTrades),
-            "showLevel" => Command::Show(CharacterAttribute::Level),
+            "showHelp" => Ok(Command::Help),
+            "showInitiative" => Ok(Command::Show(CharacterAttribute::Initiative)),
+            "showJackOfAllTrades" => Ok(Command::Show(CharacterAttribute::JackOfAllTrades)),
+            "showLevel" => Ok(Command::Show(CharacterAttribute::Level)),
             "showPassiveAbility" => parse_show_passive_ability(&slots),
             "showPassiveSkill" => parse_show_passive_skill(&slots),
             "showSavingThrow" => parse_show_saving_throw(&slots),
             "showSkill" => parse_show_skill(&slots),
-            "showSkills" => Command::ShowSkills,
-            intent_name => {
-                Command::ShowError(command::Error::UnknownIntent(intent_name.to_string()))
-            }
+            "showSkills" => Ok(Command::ShowSkills),
+            intent_name => Err(Error::UnknownIntent(intent_name.to_string())),
         })
 }
 
-fn parse_roll_ability(slots: &Vec<Slot>) -> Command {
+fn parse_roll_ability(slots: &Vec<Slot>) -> Result<Command, Error> {
     let ability = extract_ability_slot(slots);
     let condition = extract_condition_slot(slots);
-    ability.map_or(
-        Command::Clarification(format!("It looks like you're trying to roll an ability check, but I'm not sure which ability you want. Try \"Roll strength\", \"Dexterity check\", etc.")),
-        |ability| {
+    ability
+        .ok_or(Error::RollAbilityMissingAbility)
+        .map(|ability| {
             let roll = CharacterRoll {
                 check: Check::Ability(ability),
-                condition
+                condition,
             };
             Command::CharacterRoll(roll)
-        }
-    )
+        })
 }
 
-fn parse_roll_dice(slots: &Vec<Slot>) -> Command {
+fn parse_roll_dice(slots: &Vec<Slot>) -> Result<Command, Error> {
     let condition = extract_condition_slot(slots);
     let rolls = extract_usize_slot_value(slots, "rolls").unwrap_or(1);
     let sides = extract_die_slot(slots);
-    sides.map_or(
-        Command::Clarification(format!("It looks like you're trying to roll some dice, but I'm not sure what kind of dice you want. Try \"Roll a d20\", \"Throw two four-sided dice\", etc.")),
-        |sides| {
-            match Roll::new(rolls, sides, 0, condition) {
-                Ok(roll) => Command::Roll(roll),
-                Err(Error::RollsNonPositive) => {
-                    Command::Clarification(format!("It looks like you're trying to roll {} dice. I can only roll a positive number of dice. Try rolling one or more dice.", rolls))
-                }
-                Err(Error::RollsTooGreat) => {
-                    Command::Clarification(format!("It looks like you're trying to roll {} dice. That's too many dice! Try rolling 100 or fewer dice.", rolls))
-                }
-                Err(Error::SidesNonPositive) => {
-                    Command::Clarification(format!("It looks like you're trying to roll dice with {} sides. I can only roll a positive number of sides. Try rolling dice with one or more sides.", sides))
-                }
-                Err(Error::SidesTooGreat) => {
-                    Command::Clarification(format!("It looks like you're trying to roll dice with {} sides. That's too many sides! Try rolling dice with 100 or fewer sides.", sides))
-                }
-            }
-        }
-    )
+    sides.ok_or(Error::RollDiceMissingSides).and_then(|sides| {
+        Roll::new(rolls, sides, 0, condition)
+            .map(Command::Roll)
+            .map_err(|error| Error::RollDiceInvalid(error, rolls, sides))
+    })
 }
 
 fn parse_roll_initiative(slots: &Vec<Slot>) -> Command {
@@ -100,142 +84,116 @@ fn parse_roll_initiative(slots: &Vec<Slot>) -> Command {
     Command::CharacterRoll(roll)
 }
 
-fn parse_roll_saving_throw(slots: &Vec<Slot>) -> Command {
+fn parse_roll_saving_throw(slots: &Vec<Slot>) -> Result<Command, Error> {
     let ability = extract_ability_slot(slots);
     let condition = extract_condition_slot(slots);
-    ability.map_or(
-        Command::Clarification(format!("It looks like you're trying to roll a saving throw, but I'm not sure what kind of saving throw you want. Try \"Roll strength saving throw\", \"Dexterity saving throw\", etc.")),
-        |ability| {
+    ability
+        .ok_or(Error::RollSavingThrowMissingAbility)
+        .map(|ability| {
             let roll = CharacterRoll {
                 check: Check::SavingThrow(ability),
-                condition
+                condition,
             };
             Command::CharacterRoll(roll)
-        }
-    )
+        })
 }
 
-fn parse_roll_skill(slots: &Vec<Slot>) -> Command {
+fn parse_roll_skill(slots: &Vec<Slot>) -> Result<Command, Error> {
     let condition = extract_condition_slot(slots);
     let skill = extract_skill_slot(slots);
-    skill.map_or(
-        Command::Clarification(format!("It looks like you're trying to roll a skill check, but I'm not sure what skill you want. Try \"Roll stealth\", \"Athletics check\", etc.")),
-        |skill| {
-            let roll = CharacterRoll {
-                check: Check::Skill(skill),
-                condition
-            };
-            Command::CharacterRoll(roll)
-        }
-    )
+    skill.ok_or(Error::RollSkillMissingSkill).map(|skill| {
+        let roll = CharacterRoll {
+            check: Check::Skill(skill),
+            condition,
+        };
+        Command::CharacterRoll(roll)
+    })
 }
 
-fn parse_set_ability(slots: &Vec<Slot>) -> Command {
+fn parse_set_ability(slots: &Vec<Slot>) -> Result<Command, Error> {
     let ability = extract_ability_slot(slots);
     let score = extract_i32_slot_value(slots, "score");
-    ability.map_or(
-        Command::Clarification(format!("It looks like you're trying to set an ability score, but I'm not sure what ability you want to set. Try \"Set strength as 12\", \"Change dexterity to 14\", etc.")),
-        |ability| {
-            score.map_or(
-                Command::Clarification(format!("It looks like you're trying to set an ability score, but I'm not sure what score you want to set it to. Try \"Set strength as 12\", \"Change dexterity to 14\", etc.")),
-                |score| {
-                    Command::Set(CharacterAttributeUpdate::Ability(ability, score))
-                }
-            )
-        }
-    )
+    ability
+        .ok_or(Error::SetAbilityMissingAbility)
+        .and_then(|ability| {
+            score
+                .ok_or(Error::SetAbilityMissingScore)
+                .map(|score| Command::Set(CharacterAttributeUpdate::Ability(ability, score)))
+        })
 }
 
-fn parse_set_level(slots: &Vec<Slot>) -> Command {
+fn parse_set_level(slots: &Vec<Slot>) -> Result<Command, Error> {
     let level = extract_i32_slot_value(slots, "level");
-    level.map_or(
-        Command::Clarification(format!("It looks like you're trying to set your level, but I'm not sure what level you want to set it to. Try \"Set level as 3\", \"Change level to 5\", etc.")),
-        |level| {
-            Command::Set(CharacterAttributeUpdate::Level(level))
-        }
-    )
+    level
+        .ok_or(Error::SetLevelMissingLevel)
+        .map(|level| Command::Set(CharacterAttributeUpdate::Level(level)))
 }
 
-fn parse_set_saving_throw(slots: &Vec<Slot>) -> Command {
+fn parse_set_saving_throw(slots: &Vec<Slot>) -> Result<Command, Error> {
     let ability = extract_ability_slot(slots);
     let proficiency = extract_proficiency_slot(slots);
-    ability.map_or(
-        Command::Clarification(format!("It looks like you're trying to set a saving throw proficiency, but I'm not sure what saving throw you want to set. Try \"Set strength saving throw to proficient\", \"Change dexterity saving throw to normal\", etc.")),
-        |ability| {
-            proficiency.map_or(
-                Command::Clarification(format!("It looks like you're trying to set a saving throw proficiency, but I'm not sure what proficiency you want to set it to. Try \"Set strength saving throw to proficient\", \"Change dexterity saving throw to normal\", etc.")),
-                |proficiency| {
-                    Command::Set(CharacterAttributeUpdate::SavingThrowProficiency(ability, proficiency != Proficiency::Normal))
-                }
-            )
-        }
-    )
+    ability
+        .ok_or(Error::SetSavingThrowMissingAbility)
+        .and_then(|ability| {
+            proficiency
+                .ok_or(Error::SetSavingThrowMissingProficiency)
+                .map(|proficiency| {
+                    Command::Set(CharacterAttributeUpdate::SavingThrowProficiency(
+                        ability,
+                        proficiency != Proficiency::Normal,
+                    ))
+                })
+        })
 }
 
-fn parse_set_skill(slots: &Vec<Slot>) -> Command {
+fn parse_set_skill(slots: &Vec<Slot>) -> Result<Command, Error> {
     let proficiency = extract_proficiency_slot(slots);
     let skill = extract_skill_slot(slots);
-    skill.map_or(
-        Command::Clarification(format!("It looks like you're trying to set a skill proficiency, but I'm not sure what skill you want to set. Try \"Set athletics to proficient\", \"Change stealth to expert\", \"Update nature to normal\" etc.")),
-        |skill| {
-            proficiency.map_or(
-                Command::Clarification(format!("It looks like you're trying to set a skill proficiency, but I'm not sure what proficiency you want to set it to. Try \"Set athletics to proficient\", \"Change stealth to expert\", \"Update nature to normal\" etc.")),
-                |proficiency| {
-                    Command::Set(CharacterAttributeUpdate::SkillProficiency(skill, proficiency))
-                }
-            )
-        }
-    )
+    skill.ok_or(Error::SetSkillMissingSkill).and_then(|skill| {
+        proficiency
+            .ok_or(Error::SetSkillMissingProficiency)
+            .map(|proficiency| {
+                Command::Set(CharacterAttributeUpdate::SkillProficiency(
+                    skill,
+                    proficiency,
+                ))
+            })
+    })
 }
 
-fn parse_show_ability(slots: &Vec<Slot>) -> Command {
+fn parse_show_ability(slots: &Vec<Slot>) -> Result<Command, Error> {
     let ability = extract_ability_slot(slots);
-    ability.map_or(
-        Command::Clarification(format!("It looks like you're trying to view an ability score, but I'm not sure what ability you want. Try \"Show strength\", \"Display dexterity\", etc.")),
-        |ability| {
-            Command::Show(CharacterAttribute::Ability(ability))
-        }
-    )
+    ability
+        .ok_or(Error::ShowAbilityMissingAbility)
+        .map(|ability| Command::Show(CharacterAttribute::Ability(ability)))
 }
 
-fn parse_show_passive_ability(slots: &Vec<Slot>) -> Command {
+fn parse_show_passive_ability(slots: &Vec<Slot>) -> Result<Command, Error> {
     let ability = extract_ability_slot(slots);
-    ability.map_or(
-        Command::Clarification(format!("It looks like you're trying to view a passive ability score, but I'm not sure what ability you want. Try \"Show passive strength\", \"Display passive dexterity\", etc.")),
-        |ability| {
-            Command::Show(CharacterAttribute::PassiveAbility(ability))
-        }
-    )
+    ability
+        .ok_or(Error::ShowPassiveAbilityMissingAbility)
+        .map(|ability| Command::Show(CharacterAttribute::PassiveAbility(ability)))
 }
 
-fn parse_show_passive_skill(slots: &Vec<Slot>) -> Command {
+fn parse_show_passive_skill(slots: &Vec<Slot>) -> Result<Command, Error> {
     let skill = extract_skill_slot(slots);
-    skill.map_or(
-        Command::Clarification(format!("It looks like you're trying to view a passive skill score, but I'm not sure what skill you want. Try \"Show passive athletics\", \"Display passive stealth\", etc.")),
-        |skill| {
-            Command::Show(CharacterAttribute::PassiveSkill(skill))
-        }
-    )
+    skill
+        .ok_or(Error::ShowPassiveSkillMissingSkill)
+        .map(|skill| Command::Show(CharacterAttribute::PassiveSkill(skill)))
 }
 
-fn parse_show_saving_throw(slots: &Vec<Slot>) -> Command {
+fn parse_show_saving_throw(slots: &Vec<Slot>) -> Result<Command, Error> {
     let ability = extract_ability_slot(slots);
-    ability.map_or(
-        Command::Clarification(format!("It looks like you're trying to view a saving throw modifier, but I'm not sure what ability you want. Try \"Show strength saving throw\", \"Display passive saving throw\", etc.")),
-        |ability| {
-            Command::Show(CharacterAttribute::SavingThrow(ability))
-        }
-    )
+    ability
+        .ok_or(Error::ShowSavingThrowMissingAbility)
+        .map(|ability| Command::Show(CharacterAttribute::SavingThrow(ability)))
 }
 
-fn parse_show_skill(slots: &Vec<Slot>) -> Command {
+fn parse_show_skill(slots: &Vec<Slot>) -> Result<Command, Error> {
     let skill = extract_skill_slot(slots);
-    skill.map_or(
-        Command::Clarification(format!("It looks like you're trying to view a skill modifier, but I'm not sure what skill you want. Try \"Show athletics\", \"Display stealth\", etc.")),
-        |skill| {
-            Command::Show(CharacterAttribute::Skill(skill))
-        }
-    )
+    skill
+        .ok_or(Error::ShowSkillMissingSkill)
+        .map(|skill| Command::Show(CharacterAttribute::Skill(skill)))
 }
 
 fn extract_ability_slot(slots: &Vec<Slot>) -> Option<AbilityName> {

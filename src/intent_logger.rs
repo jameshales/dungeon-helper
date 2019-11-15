@@ -8,23 +8,21 @@ use snips_nlu_ontology::{IntentParserResult, Slot, SlotValue};
 pub fn log_intent_result(
     connection: &mut Connection,
     message: &Message,
-    intent_result: &Option<IntentParserResult>,
+    intent_result: &IntentParserResult,
 ) -> RusqliteResult<()> {
     connection.transaction().and_then(|transaction| {
-        intent_result
-            .as_ref()
-            .map_or(Ok(()), |intent_result| {
-                log_message(&transaction, message, intent_result)
-                    .and(intent_result.slots.iter().enumerate().fold(
-                        Ok(()),
-                        |result, (index, slot)| {
-                            result
-                                .and(log_slot(&transaction, &message.id, index as i32, slot))
-                                .map(|_| ())
-                        },
-                    ))
-                    .and(Ok(()))
-            })
+        log_message(&transaction, message, intent_result)
+            .and(
+                intent_result
+                    .slots
+                    .iter()
+                    .enumerate()
+                    .fold(Ok(()), |result, (index, slot)| {
+                        result
+                            .and(log_slot(&transaction, &message.id, index as i32, slot))
+                            .map(|_| ())
+                    }),
+            )
             .and(transaction.commit())
     })
 }
