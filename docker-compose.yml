@@ -5,11 +5,10 @@ services:
       context: .
       dockerfile: Dockerfile
     environment:
-    - DATABASE_PATH=/opt/dungeon-helper/var/dungeon-helper.db
+    - DATABASE_PATH=/opt/dungeon-helper/var/data/dungeon-helper.db
     - DISCORD_TOKEN
     - MODEL_PATH=/opt/dungeon-helper/share/model
     - RUST_LOG=dungeon-helper=INFO
     volumes:
-    - type: bind
-      source: ../snips-nlu-example/model
-      target: /opt/dungeon-helper/share/model
+    - ${PWD}/../snips-nlu-example/model:/opt/dungeon-helper/share/model
+    - ${PWD}/data/:/opt/dungeon-helper/var/data/
