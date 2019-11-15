@@ -24,8 +24,8 @@ pub fn parse_intent_result(result: &IntentParserResult) -> Result<Command, Error
             "setChannelDiceOnlyTrue" => Ok(Command::SetChannelDiceOnly(true)),
             "setChannelEnabledFalse" => Ok(Command::SetChannelEnabled(false)),
             "setChannelEnabledTrue" => Ok(Command::SetChannelEnabled(true)),
-            "setChannelLockedFalse" => Ok(Command::SetChannelLocked(true)),
-            "setChannelLockedTrue" => Ok(Command::SetChannelLocked(false)),
+            "setChannelLockedFalse" => Ok(Command::SetChannelLocked(false)),
+            "setChannelLockedTrue" => Ok(Command::SetChannelLocked(true)),
             "setJackOfAllTrades" => Ok(Command::Set(CharacterAttributeUpdate::JackOfAllTrades(
                 true,
             ))),
