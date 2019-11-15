@@ -1,0 +1,12 @@
+FROM debian:buster
+
+RUN apt-get update \
+ && apt-get install -y sqlite3 libsqlite3-dev
+
+COPY ./target/release/dungeon_helper /opt/dungeon-helper/bin/dungeon_helper
+
+ADD ./config/sql/* /opt/dungeon-helper/share/sql/
+
+ADD ./config/bin/* /opt/dungeon-helper/bin/
+
+CMD ["/opt/dungeon-helper/bin/entrypoint.sh"]

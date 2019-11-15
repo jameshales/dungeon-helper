@@ -3,7 +3,7 @@ services:
   dungeon-helper:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.local
     environment:
     - DATABASE_PATH=/opt/dungeon-helper/var/dungeon-helper.db
     - DISCORD_TOKEN
