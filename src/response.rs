@@ -16,12 +16,10 @@ impl Response {
         match self {
             Response::Clarification(message) => format!("📎 <@{}> {}", author_id, message),
             Response::DiceRoll(message) => format!("🎲 <@{}> {}", author_id, message),
-            Response::Error(_) => {
-                format!(
-                    "💥 <@{}> **Error:** A technical error has occurred. Reference ID: {}",
-                    author_id, message_id
-                )
-            }
+            Response::Error(_) => format!(
+                "💥 <@{}> **Error:** A technical error has occurred. Reference ID: {}",
+                author_id, message_id
+            ),
             Response::Help(message) => format!("🎱 <@{}> {}", author_id, message),
             Response::Show(message) => format!("<@{}> {}", author_id, message),
             Response::Update(message) => format!("💾 <@{}> {}", author_id, message),

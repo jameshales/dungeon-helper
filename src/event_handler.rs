@@ -114,11 +114,9 @@ impl Handler {
         author_id: &UserId,
     ) -> Response {
         match command {
-            Command::CharacterRoll(roll) => {
-                self.get_character_roll_response(&roll, channel_id, author_id)
-            }
-            Command::Help => self.help(),
-            Command::HelpShorthand => self.help_shorthand(),
+            Command::CharacterRoll(roll) => self.character_roll(&roll, channel_id, author_id),
+            Command::Help => Handler::help(),
+            Command::HelpShorthand => Handler::help_shorthand(),
             Command::Roll(roll) => Handler::roll(roll),
             Command::Set(attribute) => self.set(&attribute, channel_id, author_id),
             Command::SetChannelDiceOnly(dice_only) => {
@@ -145,7 +143,7 @@ impl Handler {
             .unwrap_or(())
     }
 
-    fn get_character_roll_response(
+    fn character_roll(
         &self,
         character_roll: &CharacterRoll,
         channel_id: &ChannelId,
@@ -174,7 +172,7 @@ impl Handler {
             .unwrap_or_else(identity)
     }
 
-    fn help(&self) -> Response {
+    fn help() -> Response {
         Response::Help(format!(
             "Try typing the following:\n\
              • \"Roll three d8s\"\n\
@@ -187,7 +185,7 @@ impl Handler {
         ))
     }
 
-    fn help_shorthand(&self) -> Response {
+    fn help_shorthand() -> Response {
         Response::Help(format!(
             "Try typing the following:\n\
              • \"!r 3d8\"\n\
@@ -458,6 +456,13 @@ impl EventHandler for Handler {
                     .map_or(false, |permissions| permissions.administrator())
             });
             let command_result = self.get_command(&self.engine, &message, channel.dice_only);
+            command_result.as_ref().map(|command_result| match command_result {
+                Ok(CommandResult::NaturalLanguage(Ok(command), _)) => info!(target: "dungeon-helper", "Parsed natural language command successfully. Message ID: {}, Command: {:?}", message.id, command),
+                Ok(CommandResult::NaturalLanguage(Err(error), _)) => info!(target: "dungeon-helper", "Error parsing natural language command. Message ID: {}, Error: {:}", message.id, error),
+                Ok(CommandResult::Shorthand(Err(error))) => info!(target: "dungeon-helper", "Error parsing shorthand command. Message ID: {}, Command: {:?}", message.id, error),
+                Ok(CommandResult::Shorthand(Ok(command))) => info!(target: "dungeon-helper", "Parsed shorthand command successfully. Message ID: {}, Command: {:?}", message.id, command),
+                Err(error) => info!(target: "dungeon-helper", "Error parsing command. Message ID: {}, Error: {}", message.id, error)
+            });
             self.get_action(command_result, &channel, &message, is_admin)
         };
         match action {
@@ -480,8 +485,8 @@ impl EventHandler for Handler {
                 match &response {
                     Response::Error(error) => {
                         error!(target: "dungeon-helper", "Error processing command. Message ID: {}; Error = {:?}", message.id, error);
-                    },
-                    _ => ()
+                    }
+                    _ => (),
                 };
                 let result = message
                     .channel_id
