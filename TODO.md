@@ -1,11 +1,6 @@
 # TODO
 
-- Add logging.
-  - Debug logging, showing all raw messages received.
-  - NLP logging, showing text and parsed intents / slots / confidence.
 - Have admin / DM options, such as:
-    - Enable or disable the bot for a channel.
-    - Lock or unlock changes to characters for the channel.
     - Disable character rolls in private channels.
     - Perform actions on behalf of a users, such as roll, edit attributes, or view attributes.
 - Attack and spell rolls. Have database for SRD, and provide option to define
@@ -21,3 +16,12 @@
 
   Maybe have a GreaseMonkey script that does the needful and produces a Base-64
   code that can be provided to the bot.
+
+## Done
+
+- Add logging.
+  - Debug logging, showing all raw messages received.
+  - NLP logging, showing text and parsed intents / slots / confidence.
+- Have admin / DM options, such as:
+    - Enable or disable the bot for a channel.
+    - Lock or unlock changes to characters for the channel.
