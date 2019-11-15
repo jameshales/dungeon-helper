@@ -428,8 +428,9 @@ impl Handler {
             .ok()
             .and_then(|mut connection|
                 Channel::get(&mut connection, channel_id)
-                    .map_err(|error| error!(target: "dungeon-helper", "Error retrieving channel: Channel ID: {}, Error: {}", channel_id.to_string(), error))
+                    .map_err(|error| error!(target: "dungeon-helper", "Error retrieving channel: Channel ID: {}; Error: {}", channel_id.to_string(), error))
                     .ok()
+                    .map_or(None, identity)
             )
             .unwrap_or(
                 Channel {
@@ -457,11 +458,11 @@ impl EventHandler for Handler {
             });
             let command_result = self.get_command(&self.engine, &message, channel.dice_only);
             command_result.as_ref().map(|command_result| match command_result {
-                Ok(CommandResult::NaturalLanguage(Ok(command), _)) => info!(target: "dungeon-helper", "Parsed natural language command successfully. Message ID: {}, Command: {:?}", message.id, command),
-                Ok(CommandResult::NaturalLanguage(Err(error), _)) => info!(target: "dungeon-helper", "Error parsing natural language command. Message ID: {}, Error: {:}", message.id, error),
-                Ok(CommandResult::Shorthand(Err(error))) => info!(target: "dungeon-helper", "Error parsing shorthand command. Message ID: {}, Command: {:?}", message.id, error),
-                Ok(CommandResult::Shorthand(Ok(command))) => info!(target: "dungeon-helper", "Parsed shorthand command successfully. Message ID: {}, Command: {:?}", message.id, command),
-                Err(error) => info!(target: "dungeon-helper", "Error parsing command. Message ID: {}, Error: {}", message.id, error)
+                Ok(CommandResult::NaturalLanguage(Ok(command), _)) => info!(target: "dungeon-helper", "Parsed natural language command successfully. Message ID: {}; Command: {:?}", message.id, command),
+                Ok(CommandResult::NaturalLanguage(Err(error), _)) => info!(target: "dungeon-helper", "Error parsing natural language command. Message ID: {}; Error: {:}", message.id, error),
+                Ok(CommandResult::Shorthand(Err(error))) => info!(target: "dungeon-helper", "Error parsing shorthand command. Message ID: {}; Command: {:?}", message.id, error),
+                Ok(CommandResult::Shorthand(Ok(command))) => info!(target: "dungeon-helper", "Parsed shorthand command successfully. Message ID: {}; Command: {:?}", message.id, command),
+                Err(error) => info!(target: "dungeon-helper", "Error parsing command. Message ID: {}; Error: {}", message.id, error)
             });
             self.get_action(command_result, &channel, &message, is_admin)
         };
@@ -493,10 +494,10 @@ impl EventHandler for Handler {
                     .say(&ctx.http, response.render(&message.author.id, &message.id));
                 match result {
                     Ok(sent_message) => {
-                        info!(target: "dungeon-helper", "Sent message. Message ID: {}, Sent Message ID: {}; Content: {}", message.id, sent_message.id, sent_message.content)
+                        info!(target: "dungeon-helper", "Sent message. Message ID: {}; Sent Message ID: {}; Content: {}", message.id, sent_message.id, sent_message.content)
                     }
                     Err(error) => {
-                        error!(target: "dungeon-helper", "Error sending message. Message ID: {}, Error: {:?}", message.id, error)
+                        error!(target: "dungeon-helper", "Error sending message. Message ID: {}; Error: {:?}", message.id, error)
                     }
                 }
             }
