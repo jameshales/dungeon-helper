@@ -35,8 +35,6 @@ const ABILITY_NOT_SET_WARNING_TEXT: &str =
 
 enum Action {
     IgnoreChannelDisabled,
-    IgnoreChannelLocked,
-    IgnoreCommandAdmin,
     IgnoreCommandMissing,
     IgnoreOwnMessage,
     Respond(Response),
@@ -73,6 +71,7 @@ impl Handler {
         channel: &Channel,
         message: &Message,
         is_admin: bool,
+        is_private: bool,
     ) -> Action {
         command_result.map_or(Action::IgnoreCommandMissing, |command_result| {
             command_result
@@ -89,9 +88,11 @@ impl Handler {
                             if !is_admin && !channel.enabled {
                                 Action::IgnoreChannelDisabled
                             } else if !is_admin && channel.locked && command.is_editing() {
-                                Action::IgnoreChannelLocked
+                                Action::Respond(Response::Warning(format!("It looks like you're trying to {}. You can't do that while the channel is locked.", command.description())))
                             } else if !is_admin && command.is_admin() {
-                                Action::IgnoreCommandAdmin
+                                Action::Respond(Response::Warning(format!("It looks like you're trying to {}. You need to be a channel admin to do that.", command.description())))
+                            } else if is_private && !command.is_private() {
+                                Action::Respond(Response::Warning(format!("It looks like you're trying to {}. You can't do that in a private message.", command.description())))
                             } else {
                                 Action::Respond(self.run_command(
                                     command,
@@ -456,7 +457,13 @@ impl EventHandler for Handler {
                     .ok()
                     .map_or(false, |permissions| permissions.administrator())
             });
-            let command_result = self.get_command(&self.engine, &message, channel.dice_only);
+            let is_private = message.is_private();
+            let command_result = self.get_command(
+                &self.engine,
+                &message,
+                // Private channels are implicitly dice only, no need to @me
+                channel.dice_only || is_private
+            );
             command_result.as_ref().map(|command_result| match command_result {
                 Ok(CommandResult::NaturalLanguage(Ok(command), _)) => info!(target: "dungeon-helper", "Parsed natural language command successfully. Message ID: {}; Command: {:?}", message.id, command),
                 Ok(CommandResult::NaturalLanguage(Err(error), _)) => info!(target: "dungeon-helper", "Error parsing natural language command. Message ID: {}; Error: {:}", message.id, error),
@@ -464,20 +471,14 @@ impl EventHandler for Handler {
                 Ok(CommandResult::Shorthand(Ok(command))) => info!(target: "dungeon-helper", "Parsed shorthand command successfully. Message ID: {}; Command: {:?}", message.id, command),
                 Err(error) => info!(target: "dungeon-helper", "Error parsing command. Message ID: {}; Error: {}", message.id, error)
             });
-            self.get_action(command_result, &channel, &message, is_admin)
+            self.get_action(command_result, &channel, &message, is_admin, is_private)
         };
         match action {
             Action::IgnoreChannelDisabled => {
                 info!(target: "dungeon-helper", "Ignoring command because Dungeon Helper is disabled in current channel. Message ID: {}", message.id);
             }
-            Action::IgnoreChannelLocked => {
-                info!(target: "dungeon-helper", "Ignoring command because editing is locked in current channel. Message ID: {}", message.id);
-            }
-            Action::IgnoreCommandAdmin => {
-                info!(target: "dungeon-helper", "Ignoring command because it is an admin command and the current user is not an admin. Message ID: {}", message.id);
-            }
             Action::IgnoreCommandMissing => {
-                info!(target: "dungeon-helper", "Ignoring message becuase it contains no command. Message ID: {}", message.id);
+                info!(target: "dungeon-helper", "Ignoring message because it contains no command. Message ID: {}", message.id);
             }
             Action::IgnoreOwnMessage => {
                 info!(target: "dungeon-helper", "Ignoring message because it was sent by us. Message ID: {}", message.id);

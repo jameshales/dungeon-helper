@@ -26,6 +26,24 @@ pub enum Command {
     ShowSkills,
 }
 
+impl Command {
+    pub fn description(&self) -> &str {
+        match self {
+            Command::CharacterRoll(_) => "perform a character roll",
+            Command::Help
+            | Command::HelpShorthand => "ask for help",
+            Command::Roll(_) => "perform a roll",
+            Command::Set(_) => "set a character attribute",
+            Command::SetChannelEnabled(_)
+            | Command::SetChannelLocked(_)
+            | Command::SetChannelDiceOnly(_) => "set a channel attribute",
+            Command::Show(_) => "show a character attribute",
+            Command::ShowAbilities => "show a character's abilities",
+            Command::ShowSkills => "show a character's skills",
+        }
+    }
+}
+
 #[derive(Debug)]
 pub enum Error {
     // Shorthand commands
@@ -167,6 +185,15 @@ impl Command {
         match self {
             Command::Set(_) => true,
             _ => false,
+        }
+    }
+
+    pub fn is_private(&self) -> bool {
+        match self {
+            Command::Help
+            | Command::HelpShorthand
+            | Command::Roll(_) => true,
+            _ => false
         }
     }
 
