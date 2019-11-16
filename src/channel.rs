@@ -11,11 +11,13 @@ pub struct Channel {
 
 impl Channel {
     pub fn get(connection: &Connection, channel_id: &ChannelId) -> RusqliteResult<Option<Channel>> {
-        connection.query_row(
-            "SELECT enabled, locked, dice_only FROM channels WHERE channel_id = $1",
-            &[&channel_id.to_string()],
-            Channel::from_row,
-        ).optional()
+        connection
+            .query_row(
+                "SELECT enabled, locked, dice_only FROM channels WHERE channel_id = $1",
+                &[&channel_id.to_string()],
+                Channel::from_row,
+            )
+            .optional()
     }
 
     fn from_row(row: &Row) -> RusqliteResult<Channel> {

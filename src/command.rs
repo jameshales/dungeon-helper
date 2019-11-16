@@ -4,8 +4,9 @@ use crate::error;
 use crate::intent_parser::parse_intent_result;
 use crate::response::Response;
 use crate::roll;
+use crate::roll::ConditionalRoll;
 use crate::roll::Error as RollError;
-use crate::roll::Roll;
+use crate::weapon::AmbiguousWeaponName;
 use regex::Regex;
 use snips_nlu_lib::SnipsNluEngine;
 use snips_nlu_ontology::IntentParserResult;
@@ -13,10 +14,11 @@ use std::fmt;
 
 #[derive(Debug)]
 pub enum Command {
+    AttackRoll(crate::attack_roll::AttackRoll),
     CharacterRoll(crate::character_roll::CharacterRoll),
     Help,
     HelpShorthand,
-    Roll(crate::roll::Roll),
+    Roll(crate::roll::ConditionalRoll),
     Set(CharacterAttributeUpdate),
     SetChannelEnabled(bool),
     SetChannelLocked(bool),
@@ -24,14 +26,15 @@ pub enum Command {
     Show(CharacterAttribute),
     ShowAbilities,
     ShowSkills,
+    ShowWeaponProficiencies,
 }
 
 impl Command {
     pub fn description(&self) -> &str {
         match self {
+            Command::AttackRoll(_) => "perform an attack roll",
             Command::CharacterRoll(_) => "perform a character roll",
-            Command::Help
-            | Command::HelpShorthand => "ask for help",
+            Command::Help | Command::HelpShorthand => "ask for help",
             Command::Roll(_) => "perform a roll",
             Command::Set(_) => "set a character attribute",
             Command::SetChannelEnabled(_)
@@ -40,6 +43,7 @@ impl Command {
             Command::Show(_) => "show a character attribute",
             Command::ShowAbilities => "show a character's abilities",
             Command::ShowSkills => "show a character's skills",
+            Command::ShowWeaponProficiencies => "show a character's weapon proficiencies",
         }
     }
 }
@@ -54,6 +58,10 @@ pub enum Error {
     IntentParserError(::failure::Error),
     NoIntent,
     RollAbilityMissingAbility,
+    RollAttackAmbiguousWeapon(AmbiguousWeaponName),
+    RollAttackMissingClassification,
+    RollAttackMissingHandedness,
+    RollAttackMissingWeapon,
     RollDiceMissingSides,
     RollDiceInvalid(RollError, usize, i32),
     RollSavingThrowMissingAbility,
@@ -65,6 +73,9 @@ pub enum Error {
     SetSavingThrowMissingProficiency,
     SetSkillMissingSkill,
     SetSkillMissingProficiency,
+    SetWeaponProficiencyAmbiguousWeapon(AmbiguousWeaponName),
+    SetWeaponProficiencyMissingProficiency,
+    SetWeaponProficiencyMissingWeaponAndCategory,
     ShowAbilityMissingAbility,
     ShowPassiveAbilityMissingAbility,
     ShowPassiveSkillMissingSkill,
@@ -98,6 +109,18 @@ impl fmt::Display for Error {
             }
             Error::RollAbilityMissingAbility => {
                 write!(f, "It looks like you're trying to roll an ability check, but I'm not sure which ability you want. Try \"Roll strength\", \"Dexterity check\", etc.")
+            }
+            Error::RollAttackAmbiguousWeapon(ambiguous_weapon) => {
+                write!(f, "It looks like you're trying to roll an attack check with a {}, but that is an ambiguous weapon name. {}", ambiguous_weapon, ambiguous_weapon.message())
+            }
+            Error::RollAttackMissingClassification => {
+                write!(f, "It looks like you're trying to roll an attack check with an improvised weapon, but I'm not sure whether it should be a melee or ranged attack. Try \"Attack improvised weapon as melee\", \"Roll ranged improvised weapon check\", etc.")
+            }
+            Error::RollAttackMissingHandedness => {
+                write!(f, "It looks like you're trying to roll an attack check with a weapon that has the versatile property, but I'm not sure whether you want to attack with one hand or two hands. Try \"One-handed attack quarterstaff\", \"Roll longsword weapon check with two hands\", etc.")
+            }
+            Error::RollAttackMissingWeapon => {
+                write!(f, "It looks like you're trying to roll an attack check, but I'm not sure which weapon you want to attack with. Try \"Attack club\", \"Dagger attack\", etc.")
             }
             Error::RollDiceMissingSides => {
                 write!(f, "It looks like you're trying to roll some dice, but I'm not sure what kind of dice you want. Try \"Roll a d20\", \"Throw two four-sided dice\", etc.")
@@ -142,6 +165,15 @@ impl fmt::Display for Error {
             }
             Error::SetSkillMissingProficiency => {
                 write!(f, "It looks like you're trying to set a skill proficiency, but I'm not sure what proficiency you want to set it to. Try \"Set athletics to proficient\", \"Change stealth to expert\", \"Update nature to normal\" etc.")
+            }
+            Error::SetWeaponProficiencyAmbiguousWeapon(ambiguous_weapon) => {
+                write!(f, "It looks like you're trying to set a weapon proficiency for {}, but that is an ambiguous weapon name. {}", ambiguous_weapon, ambiguous_weapon.message())
+            }
+            Error::SetWeaponProficiencyMissingProficiency => {
+                write!(f, "It looks like you're trying to set a weapon proficiency, but I'm not sure what proficiency you want to set it to. Try \"Set club to proficient\", \"Change martial weapons to normal\", etc.")
+            }
+            Error::SetWeaponProficiencyMissingWeaponAndCategory => {
+                write!(f, "It looks like you're trying to set a weapon proficiency, but I'm not sure what weapon or category of weapons you want to set. Try \"Set club to proficient\", \"Change martial weapons to normal\", etc.")
             }
             Error::ShowAbilityMissingAbility => {
                 write!(f, "It looks like you're trying to view an ability score, but I'm not sure what ability you want. Try \"Show strength\", \"Display dexterity\", etc.")
@@ -190,10 +222,8 @@ impl Command {
 
     pub fn is_private(&self) -> bool {
         match self {
-            Command::Help
-            | Command::HelpShorthand
-            | Command::Roll(_) => true,
-            _ => false
+            Command::Help | Command::HelpShorthand | Command::Roll(_) => true,
+            _ => false,
         }
     }
 
@@ -239,7 +269,7 @@ impl Command {
                 .get(1)
                 .map_or(false, |m| bot_id.iter().any(|bot_id| bot_id == &m.as_str()));
             if dice_only || is_at_message {
-                c.get(2).map(|m| m.as_str().to_string())
+                c.get(2).map(|m| m.as_str().to_owned())
             } else {
                 None
             }
@@ -254,9 +284,9 @@ impl Command {
         if command == "!help" {
             Some(Ok(Command::HelpShorthand))
         } else if let Some(captures) = ROLL_COMMAND_REGEX.captures(&command) {
-            let roll_command = captures.get(1).map_or("", |m| m.as_str()).to_string();
+            let roll_command = captures.get(1).map_or("", |m| m.as_str()).to_owned();
             Some(
-                Roll::parse(&roll_command)
+                ConditionalRoll::parse(&roll_command)
                     .map(Command::Roll)
                     .map_err(Error::RollParserError)
                     .or(CharacterRoll::parse(&roll_command)

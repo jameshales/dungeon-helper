@@ -2,6 +2,7 @@
 extern crate lazy_static;
 extern crate log;
 
+mod attack_roll;
 mod channel;
 mod character;
 mod character_roll;
@@ -12,6 +13,7 @@ mod intent_logger;
 mod intent_parser;
 mod response;
 mod roll;
+mod weapon;
 
 use crate::event_handler::Handler;
 use log::error;

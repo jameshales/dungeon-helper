@@ -1,3 +1,4 @@
+use crate::attack_roll::{AttackRoll, Handedness, ImprovisedWeaponAttackRoll, WeaponAttackRoll};
 use crate::channel::Channel;
 use crate::character::{
     Ability, Character, CharacterAttribute, CharacterAttributeUpdate, SavingThrow, Skill,
@@ -8,7 +9,7 @@ use crate::command::{Command, CommandResult};
 use crate::error::Error;
 use crate::intent_logger::log_intent_result;
 use crate::response::Response;
-use crate::roll::Roll;
+use crate::roll::ConditionalRoll;
 use log::{error, info};
 use r2d2::{Pool, PooledConnection};
 use r2d2_sqlite::SqliteConnectionManager;
@@ -101,7 +102,7 @@ impl Handler {
                                 ))
                             }
                         }
-                        Err(error) => Action::Respond(Response::Clarification(error.to_string())),
+                        Err(error) => Action::Respond(error.into_response()),
                     }
                 })
                 .unwrap_or_else(|error| Action::Respond(error.into_response()))
@@ -115,6 +116,7 @@ impl Handler {
         author_id: &UserId,
     ) -> Response {
         match command {
+            Command::AttackRoll(roll) => self.attack_roll(&roll, channel_id, author_id),
             Command::CharacterRoll(roll) => self.character_roll(&roll, channel_id, author_id),
             Command::Help => Handler::help(),
             Command::HelpShorthand => Handler::help_shorthand(),
@@ -128,6 +130,9 @@ impl Handler {
             Command::Show(attribute) => self.show(&attribute, channel_id, author_id),
             Command::ShowAbilities => self.show_abilities(channel_id, author_id),
             Command::ShowSkills => self.show_skills(channel_id, author_id),
+            Command::ShowWeaponProficiencies => {
+                self.show_weapon_proficiencies(channel_id, author_id)
+            }
         }
     }
 
@@ -144,6 +149,72 @@ impl Handler {
             .unwrap_or(())
     }
 
+    fn attack_roll(
+        &self,
+        attack_roll: &AttackRoll,
+        channel_id: &ChannelId,
+        author_id: &UserId,
+    ) -> Response {
+        self.pool
+            .get()
+            .map_err(|error| Response::Error(Error::R2D2Error(error)))
+            .and_then(|connection| {
+                Character::get(&connection, channel_id, author_id)
+                    .map_err(|_| Response::Warning(CHARACTER_NOT_FOUND_WARNING_TEXT.to_owned()))
+                    .and_then(|character| {
+                        match attack_roll {
+                            AttackRoll::Weapon(attack_roll) => {
+                                Character::has_weapon_proficiency(
+                                    &connection,
+                                    channel_id,
+                                    author_id,
+                                    &attack_roll.weapon,
+                                    &attack_roll.weapon.to_weapon().category,
+                                )
+                                .map(|proficiency| (character, proficiency))
+                                .map_err(|error| Response::Error(Error::RusqliteError(error)))
+                            }
+                            _ => Ok((character, false))
+                        }
+                    })
+            })
+            .and_then(|(character, proficiency)| {
+                attack_roll
+                    .to_attack_roll(character.strength().map(|a| a.modifier), character.dexterity().map(|a| a.modifier), character.proficiency_bonus(), proficiency)
+                    .ok_or(Response::Warning(ABILITY_NOT_SET_WARNING_TEXT.to_owned()))
+            })
+            .map(|attack_roll_roll| {
+                let mut rng = rand::thread_rng();
+                let damage_roll = attack_roll.to_damage_roll();
+                let attack_result = attack_roll_roll.roll(&mut rng);
+                let damage_result = damage_roll.roll(&mut rng);
+                let attack_name = match attack_roll {
+                    AttackRoll::ImprovisedWeapon(ImprovisedWeaponAttackRoll { classification, .. }) => format!("improvised weapon (as {})", classification),
+                    AttackRoll::UnarmedStrike(_) => "unarmed strike".to_owned(),
+                    AttackRoll::Weapon(WeaponAttackRoll { classification: Some(classification), weapon, .. }) => format!("{} (as {})", weapon, classification),
+                    AttackRoll::Weapon(WeaponAttackRoll { classification: None, weapon, .. }) => weapon.to_string(),
+                };
+                let attack_handedness = match attack_roll {
+                    AttackRoll::Weapon(WeaponAttackRoll { handedness: Some(handedness), weapon, .. }) if weapon.to_weapon().versatile.is_some() =>
+                        match handedness {
+                            Handedness::OneHanded => " one handed",
+                            Handedness::TwoHanded => " two handed",
+                        }
+                    _ => "",
+                };
+                Response::DiceRoll(format!(
+                    "attacked{} with {} to hit armour class ({}) = 🛡️ {}; and dealing damage ({}) = ❤️ {}",
+                    attack_handedness,
+                    attack_name,
+                    attack_roll_roll,
+                    attack_result,
+                    damage_roll,
+                    damage_result
+                ))
+            })
+            .unwrap_or_else(identity)
+    }
+
     fn character_roll(
         &self,
         character_roll: &CharacterRoll,
@@ -155,12 +226,12 @@ impl Handler {
             .map_err(|error| Response::Error(Error::R2D2Error(error)))
             .and_then(|connection| {
                 Character::get(&connection, channel_id, author_id)
-                    .map_err(|_| Response::Warning(CHARACTER_NOT_FOUND_WARNING_TEXT.to_string()))
+                    .map_err(|_| Response::Warning(CHARACTER_NOT_FOUND_WARNING_TEXT.to_owned()))
             })
             .and_then(|character| {
                 character_roll
                     .to_roll(&character)
-                    .ok_or(Response::Warning(ABILITY_NOT_SET_WARNING_TEXT.to_string()))
+                    .ok_or(Response::Warning(ABILITY_NOT_SET_WARNING_TEXT.to_owned()))
             })
             .map(|roll| {
                 let mut rng = rand::thread_rng();
@@ -199,7 +270,7 @@ impl Handler {
         ))
     }
 
-    fn roll(roll: Roll) -> Response {
+    fn roll(roll: ConditionalRoll) -> Response {
         let mut rng = rand::thread_rng();
         let result = roll.roll(&mut rng);
         Response::DiceRoll(format!("rolled {} = {}", roll, result))
@@ -288,7 +359,7 @@ impl Handler {
                 "Initiative = {}",
                 character
                     .dexterity()
-                    .map_or("?".to_string(), |v| format!("{:+}", v.modifier))
+                    .map_or("?".to_owned(), |v| format!("{:+}", v.modifier))
             ),
             CharacterAttribute::JackOfAllTrades => format!(
                 "Jack of All Trades = {}",
@@ -300,21 +371,21 @@ impl Handler {
             ),
             CharacterAttribute::Level => format!(
                 "Level = {}",
-                character.level().map_or("?".to_string(), |v| v.to_string())
+                character.level().map_or("?".to_owned(), |v| v.to_string())
             ),
             CharacterAttribute::PassiveAbility(ability) => format!(
                 "Passive {} = {}",
                 ability.as_str(),
                 character
                     .passive_ability(*ability)
-                    .map_or("?".to_string(), |v| v.to_string())
+                    .map_or("?".to_owned(), |v| v.to_string())
             ),
             CharacterAttribute::PassiveSkill(skill) => format!(
                 "Passive {} = {}",
                 skill.as_str(),
                 character
                     .passive_skill(*skill)
-                    .map_or("?".to_string(), |v| v.to_string())
+                    .map_or("?".to_owned(), |v| v.to_string())
             ),
             CharacterAttribute::SavingThrow(ability) => format!(
                 "{} saving throw = {}",
@@ -397,14 +468,33 @@ impl Handler {
         })
     }
 
+    fn show_weapon_proficiencies(&self, channel_id: &ChannelId, author_id: &UserId) -> Response {
+        self.with_connection(|connection| {
+            Character::get_weapon_proficiencies(&connection, channel_id, author_id).map(|weapons| {
+                Response::Show(format!(
+                    "Weapon proficiencies: {}",
+                    if weapons.len() > 0 {
+                        weapons
+                            .iter()
+                            .map(|weapon_name| weapon_name.to_string())
+                            .collect::<Vec<String>>()
+                            .join(", ")
+                    } else {
+                        "None".to_owned()
+                    }
+                ))
+            })
+        })
+    }
+
     fn format_ability(ability: Option<Ability>) -> String {
-        ability.map_or("?".to_string(), |a| {
+        ability.map_or("?".to_owned(), |a| {
             format!("{:+} ({})", a.modifier, a.score)
         })
     }
 
     fn format_saving_throw(saving_throw: Option<SavingThrow>) -> String {
-        saving_throw.map_or("?".to_string(), |s| {
+        saving_throw.map_or("?".to_owned(), |s| {
             format!(
                 "{:+} ({})",
                 s.modifier,
@@ -418,7 +508,7 @@ impl Handler {
     }
 
     fn format_skill(skill: Option<Skill>) -> String {
-        skill.map_or("?".to_string(), |s| {
+        skill.map_or("?".to_owned(), |s| {
             format!("{:+} ({})", s.modifier, s.proficiency.as_str())
         })
     }
@@ -462,7 +552,7 @@ impl EventHandler for Handler {
                 &self.engine,
                 &message,
                 // Private channels are implicitly dice only, no need to @me
-                channel.dice_only || is_private
+                channel.dice_only || is_private,
             );
             command_result.as_ref().map(|command_result| match command_result {
                 Ok(CommandResult::NaturalLanguage(Ok(command), _)) => info!(target: "dungeon-helper", "Parsed natural language command successfully. Message ID: {}; Command: {:?}", message.id, command),
@@ -495,7 +585,7 @@ impl EventHandler for Handler {
                     .say(&ctx.http, response.render(&message.author.id, &message.id));
                 match result {
                     Ok(sent_message) => {
-                        info!(target: "dungeon-helper", "Sent message. Message ID: {}; Sent Message ID: {}; Content: {}", message.id, sent_message.id, sent_message.content)
+                        info!(target: "dungeon-helper", "Sent message. Message ID: {}; Sent Message ID: {}; Content: {}", message.id, sent_message.id, sent_message.content.escape_debug())
                     }
                     Err(error) => {
                         error!(target: "dungeon-helper", "Error sending message. Message ID: {}; Error: {:?}", message.id, error)

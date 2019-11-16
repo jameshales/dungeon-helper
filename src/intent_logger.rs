@@ -69,7 +69,7 @@ fn log_slot(
 
 fn slot_value_to_string(slot_value: &SlotValue) -> Option<String> {
     match slot_value {
-        SlotValue::Custom(inner_value) => Some(inner_value.value.to_string()),
+        SlotValue::Custom(inner_value) => Some(inner_value.value.to_owned()),
         SlotValue::Number(inner_value) => Some(inner_value.value.to_string()),
         _ => None,
     }

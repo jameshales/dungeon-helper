@@ -1,6 +1,7 @@
+use crate::weapon::{Category, WeaponName, WeaponProficiency};
 use rusqlite::types::{FromSql, FromSqlError, FromSqlResult, ToSql, ToSqlOutput, ValueRef};
 use rusqlite::Result as RusqliteResult;
-use rusqlite::{Connection, Row, Transaction};
+use rusqlite::{Connection, OptionalExtension, Row, Transaction};
 use serenity::model::id::{ChannelId, UserId};
 use std::error;
 use std::fmt;
@@ -177,7 +178,7 @@ impl Character {
         )
     }
 
-    fn proficiency_bonus(&self) -> Option<i32> {
+    pub fn proficiency_bonus(&self) -> Option<i32> {
         self.level.map(|level| level / 4 + 2)
     }
 
@@ -498,13 +499,121 @@ impl Character {
                     *jack_of_all_trades,
                 )
             }
-            CharacterAttributeUpdate::SavingThrowProficiency(name, proficiency) => {
-                Character::set_saving_throw(transaction, channel_id, user_id, name, *proficiency)
+            CharacterAttributeUpdate::SavingThrowProficiency(name, proficient) => {
+                Character::set_saving_throw(transaction, channel_id, user_id, name, *proficient)
             }
             CharacterAttributeUpdate::SkillProficiency(name, proficiency) => {
                 Character::set_skill(transaction, channel_id, user_id, name, proficiency)
             }
+            CharacterAttributeUpdate::WeaponProficiency(name, proficient) => {
+                Character::set_weapon_proficiency(
+                    transaction,
+                    channel_id,
+                    user_id,
+                    name,
+                    *proficient,
+                )
+            }
+            CharacterAttributeUpdate::WeaponCategoryProficiency(category, proficient) => {
+                Character::set_weapon_category_proficiency(
+                    transaction,
+                    channel_id,
+                    user_id,
+                    category,
+                    *proficient,
+                )
+            }
         }
+    }
+
+    pub fn has_weapon_proficiency(
+        connection: &Connection,
+        channel_id: &ChannelId,
+        user_id: &UserId,
+        name: &WeaponName,
+        category: &Category,
+    ) -> RusqliteResult<bool> {
+        let params: &[&dyn ToSql] = &[
+            &channel_id.to_string(),
+            &user_id.to_string(),
+            &name.as_str(),
+            &category.as_str(),
+        ];
+        connection
+            .query_row(
+                "SELECT true \
+             FROM character_weapon_proficiencies \
+             WHERE channel_id = $1 \
+             AND user_id = $2
+             AND (weapon_name = $3 OR weapon_category = $4)",
+                params,
+                |row| row.get(0),
+            )
+            .optional()
+            .map(|result| result.unwrap_or(false))
+    }
+
+    pub fn set_weapon_proficiency(
+        transaction: &Transaction,
+        channel_id: &ChannelId,
+        user_id: &UserId,
+        name: &WeaponName,
+        proficient: bool,
+    ) -> RusqliteResult<usize> {
+        let params: &[&dyn ToSql] = &[
+            &channel_id.to_string(),
+            &user_id.to_string(),
+            &name.as_str(),
+        ];
+        transaction.execute(
+            if proficient {
+                "INSERT OR IGNORE INTO character_weapon_proficiencies (channel_id, user_id, weapon_name) VALUES ($1, $2, $3)"
+            } else {
+                "DELETE FROM character_weapon_proficiencies WHERE channel_id = $1 AND user_id = $2 AND weapon_name = $3"
+            },
+            params,
+        )
+    }
+
+    pub fn set_weapon_category_proficiency(
+        transaction: &Transaction,
+        channel_id: &ChannelId,
+        user_id: &UserId,
+        category: &Category,
+        proficient: bool,
+    ) -> RusqliteResult<usize> {
+        let params: &[&dyn ToSql] = &[
+            &channel_id.to_string(),
+            &user_id.to_string(),
+            &category.as_str(),
+        ];
+        transaction.execute(
+            if proficient {
+                "INSERT OR IGNORE INTO character_weapon_proficiencies (channel_id, user_id, weapon_category) VALUES ($1, $2, $3)"
+            } else {
+                "DELETE FROM character_weapon_proficiencies WHERE channel_id = $1 AND user_id = $2 AND weapon_category = $3"
+            },
+            params,
+        )
+    }
+
+    pub fn get_weapon_proficiencies(
+        connection: &Connection,
+        channel_id: &ChannelId,
+        user_id: &UserId,
+    ) -> RusqliteResult<Vec<WeaponProficiency>> {
+        connection.prepare("SELECT weapon_name, weapon_category FROM character_weapon_proficiencies WHERE channel_id = $1 AND user_id = $2 ORDER BY weapon_name, weapon_category ASC")
+            .and_then(|mut statement| {
+                statement.query_map(
+                    &[&channel_id.to_string(), &user_id.to_string()],
+                    |row| Ok((row.get("weapon_name")?, row.get("weapon_category")?))
+                ).and_then(|weapon_names| weapon_names.filter_map(|result| match result {
+                    Ok((Some(name), _)) => Some(Ok(WeaponProficiency::WeaponName(name))),
+                    Ok((_, Some(category))) => Some(Ok(WeaponProficiency::Category(category))),
+                    Ok(_) => None,
+                    Err(error) => Some(Err(error)),
+                }).collect())
+            })
     }
 }
 
@@ -539,7 +648,7 @@ impl FromSql for Proficiency {
         value.as_str().and_then(|string| {
             Proficiency::parse(string).ok_or(FromSqlError::Other(Box::new(
                 InvalidProficiencyValueError {
-                    value: string.to_string(),
+                    value: string.to_owned(),
                 },
             )))
         })
@@ -743,6 +852,8 @@ pub enum CharacterAttributeUpdate {
     JackOfAllTrades(bool),
     SavingThrowProficiency(AbilityName, bool),
     SkillProficiency(SkillName, Proficiency),
+    WeaponProficiency(WeaponName, bool),
+    WeaponCategoryProficiency(Category, bool),
 }
 
 impl fmt::Display for CharacterAttributeUpdate {
@@ -766,6 +877,18 @@ impl fmt::Display for CharacterAttributeUpdate {
             CharacterAttributeUpdate::SkillProficiency(skill, proficiency) => {
                 write!(f, "{} = {}", skill.as_str(), proficiency.as_str())
             }
+            CharacterAttributeUpdate::WeaponProficiency(name, proficient) => write!(
+                f,
+                "{} proficiency = {}",
+                name.as_str(),
+                if *proficient { "Proficient" } else { "Normal" }
+            ),
+            CharacterAttributeUpdate::WeaponCategoryProficiency(category, proficient) => write!(
+                f,
+                "{} weapon proficiency = {}",
+                category.as_str(),
+                if *proficient { "Proficient" } else { "Normal" }
+            ),
         }
     }
 }

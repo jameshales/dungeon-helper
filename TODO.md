@@ -1,10 +1,9 @@
 # TODO
 
 - Have admin / DM options, such as:
-    - Disable character rolls in private channels.
     - Perform actions on behalf of a users, such as roll, edit attributes, or view attributes.
-- Attack and spell rolls. Have database for SRD, and provide option to define
-  custom attacks and spells.
+- Spell rolls.
+- Custom attacks and spells.
 - Parse character sheets from D&D Beyond.
   
   There is a JSON version available by appending `/json` to the character sheet
@@ -25,3 +24,5 @@
 - Have admin / DM options, such as:
     - Enable or disable the bot for a channel.
     - Lock or unlock changes to characters for the channel.
+    - Disable character rolls in private channels.
+- Attack rolls.

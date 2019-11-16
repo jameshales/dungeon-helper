@@ -1,5 +1,5 @@
 use crate::character::{AbilityName, Character, SkillName};
-use crate::roll::{Condition, Roll};
+use crate::roll::{Condition, ConditionalRoll};
 use regex::Regex;
 use std::fmt;
 
@@ -27,14 +27,14 @@ impl CharacterRoll {
         })
     }
 
-    pub fn to_roll(&self, character: &Character) -> Option<Roll> {
+    pub fn to_roll(&self, character: &Character) -> Option<ConditionalRoll> {
         let modifier = match self.check {
             Check::Ability(name) => character.ability(name)?.modifier,
             Check::Initiative => character.ability(AbilityName::Dexterity)?.modifier,
             Check::SavingThrow(name) => character.saving_throw(name)?.modifier,
             Check::Skill(name) => character.skill(name)?.modifier,
         };
-        Some(Roll::new(1, 20, modifier, self.condition).unwrap())
+        Some(ConditionalRoll::new(1, 20, modifier, self.condition).unwrap())
     }
 }
 
@@ -71,10 +71,10 @@ impl Check {
 impl fmt::Display for Check {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Check::Ability(name) => write!(f, "{}", name.as_str()),
+            Check::Ability(name) => name.as_str().fmt(f),
             Check::Initiative => write!(f, "Initiative"),
             Check::SavingThrow(name) => write!(f, "{} saving throw", name.as_str()),
-            Check::Skill(name) => write!(f, "{}", name.as_str()),
+            Check::Skill(name) => name.as_str().fmt(f),
         }
     }
 }
