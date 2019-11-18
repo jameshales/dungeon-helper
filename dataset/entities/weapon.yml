@@ -6,12 +6,9 @@ values:
     - battle axe
     - battle-axe
   - - club
-  - - crossbow, hand
-    - hand crossbow
-  - - crossbow, heavy
-    - heavy crossbow
-  - - crossbow, light
-    - light crossbow
+  - - hand crossbow
+  - - heavy crossbow
+  - - light crossbow
   - - dagger
   - - dart
   - - flail
