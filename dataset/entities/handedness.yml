@@ -7,6 +7,9 @@ values:
     - one-hand
     - single handed
     - single-handed
+    - onehanded
+    - onehand
+    - singlehanded
   - - two handed
     - two-handed
     - two hand
@@ -15,5 +18,7 @@ values:
     - two-hands
     - both hands
     - both-hands
-    - double handed 
+    - double handed
     - double-handed
+    - twohanded
+    - doublehanded
