@@ -1,25 +1,30 @@
-INSERT INTO characters (
+-- LBD&D #dice
+INSERT INTO channels (
   channel_id,
-  user_id,
-  level,
-  strength,
-  dexterity,
-  constitution,
-  intelligence,
-  wisdom,
-  charisma
+  enabled,
+  locked,
+  dice_only
 ) VALUES (
-  '641788813647151113',
-  '292225680303849472',
-  1,
-  18,
-  13,
-  16,
-  8,
-  10,
-  12
+  '644028953719209984',
+  true,
+  true,
+  true
 );
 
+-- DHD #dice
+INSERT INTO channels (
+  channel_id,
+  enabled,
+  locked,
+  dice_only
+) VALUES (
+  '643662493557850129',
+  true,
+  false,
+  true
+);
+
+-- Grem
 INSERT INTO characters (
   channel_id,
   user_id,
@@ -56,6 +61,27 @@ INSERT INTO characters (
   'Proficient'
 );
 
+INSERT INTO character_weapon_proficiencies (
+  channel_id,
+  user_id,
+  weapon_category
+) VALUES (
+  '644028953719209984',
+  '194800877960167424',
+  'Simple'
+);
+
+INSERT INTO character_weapon_proficiencies (
+  channel_id,
+  user_id,
+  weapon_category
+) VALUES (
+  '644028953719209984',
+  '194800877960167424',
+  'Martial'
+);
+
+-- Roland
 INSERT INTO characters (
   channel_id,
   user_id,
@@ -90,6 +116,27 @@ INSERT INTO characters (
   'Proficient'
 );
 
+INSERT INTO character_weapon_proficiencies (
+  channel_id,
+  user_id,
+  weapon_category
+) VALUES (
+  '644028953719209984',
+  '448364875299946506',
+  'Simple'
+);
+
+INSERT INTO character_weapon_proficiencies (
+  channel_id,
+  user_id,
+  weapon_category
+) VALUES (
+  '644028953719209984',
+  '448364875299946506',
+  'Martial'
+);
+
+-- Laughter
 INSERT INTO characters (
   channel_id,
   user_id,
@@ -134,6 +181,57 @@ INSERT INTO characters (
   'Proficient'
 );
 
+INSERT INTO character_weapon_proficiencies (
+  channel_id,
+  user_id,
+  weapon_category
+) VALUES (
+  '644028953719209984',
+  '583587280296345601',
+  'Simple'
+);
+
+INSERT INTO character_weapon_proficiencies (
+  channel_id,
+  user_id,
+  weapon_name
+) VALUES (
+  '644028953719209984',
+  '583587280296345601',
+  'Hand Crossbow'
+);
+
+INSERT INTO character_weapon_proficiencies (
+  channel_id,
+  user_id,
+  weapon_name
+) VALUES (
+  '644028953719209984',
+  '583587280296345601',
+  'Longsword'
+);
+
+INSERT INTO character_weapon_proficiencies (
+  channel_id,
+  user_id,
+  weapon_name
+) VALUES (
+  '644028953719209984',
+  '583587280296345601',
+  'Rapier'
+);
+
+INSERT INTO character_weapon_proficiencies (
+  channel_id,
+  user_id,
+  weapon_name
+) VALUES (
+  '644028953719209984',
+  '583587280296345601',
+  'Shortsword'
+);
+
+-- Hardrum
 INSERT INTO characters (
   channel_id,
   user_id,
@@ -168,6 +266,147 @@ INSERT INTO characters (
   'Proficient'
 );
 
+INSERT INTO character_weapon_proficiencies (
+  channel_id,
+  user_id,
+  weapon_name
+) VALUES (
+  '644028953719209984',
+  '638138236874522634',
+  'Battleaxe'
+);
+
+INSERT INTO character_weapon_proficiencies (
+  channel_id,
+  user_id,
+  weapon_name
+) VALUES (
+  '644028953719209984',
+  '638138236874522634',
+  'Club'
+);
+
+INSERT INTO character_weapon_proficiencies (
+  channel_id,
+  user_id,
+  weapon_name
+) VALUES (
+  '644028953719209984',
+  '638138236874522634',
+  'Dagger'
+);
+
+INSERT INTO character_weapon_proficiencies (
+  channel_id,
+  user_id,
+  weapon_name
+) VALUES (
+  '644028953719209984',
+  '638138236874522634',
+  'Dart'
+);
+
+INSERT INTO character_weapon_proficiencies (
+  channel_id,
+  user_id,
+  weapon_name
+) VALUES (
+  '644028953719209984',
+  '638138236874522634',
+  'Handaxe'
+);
+
+INSERT INTO character_weapon_proficiencies (
+  channel_id,
+  user_id,
+  weapon_name
+) VALUES (
+  '644028953719209984',
+  '638138236874522634',
+  'Javelin'
+);
+
+INSERT INTO character_weapon_proficiencies (
+  channel_id,
+  user_id,
+  weapon_name
+) VALUES (
+  '644028953719209984',
+  '638138236874522634',
+  'Light Hammer'
+);
+
+INSERT INTO character_weapon_proficiencies (
+  channel_id,
+  user_id,
+  weapon_name
+) VALUES (
+  '644028953719209984',
+  '638138236874522634',
+  'Mace'
+);
+
+INSERT INTO character_weapon_proficiencies (
+  channel_id,
+  user_id,
+  weapon_name
+) VALUES (
+  '644028953719209984',
+  '638138236874522634',
+  'Quarterstaff'
+);
+
+INSERT INTO character_weapon_proficiencies (
+  channel_id,
+  user_id,
+  weapon_name
+) VALUES (
+  '644028953719209984',
+  '638138236874522634',
+  'Scimitar'
+);
+
+INSERT INTO character_weapon_proficiencies (
+  channel_id,
+  user_id,
+  weapon_name
+) VALUES (
+  '644028953719209984',
+  '638138236874522634',
+  'Sickle'
+);
+
+INSERT INTO character_weapon_proficiencies (
+  channel_id,
+  user_id,
+  weapon_name
+) VALUES (
+  '644028953719209984',
+  '638138236874522634',
+  'Sling'
+);
+
+INSERT INTO character_weapon_proficiencies (
+  channel_id,
+  user_id,
+  weapon_name
+) VALUES (
+  '644028953719209984',
+  '638138236874522634',
+  'Spear'
+);
+
+INSERT INTO character_weapon_proficiencies (
+  channel_id,
+  user_id,
+  weapon_name
+) VALUES (
+  '644028953719209984',
+  '638138236874522634',
+  'Warhammer'
+);
+
+-- Mallile
 INSERT INTO characters (
   channel_id,
   user_id,
@@ -200,4 +439,54 @@ INSERT INTO characters (
   'Proficient',
   'Proficient',
   'Proficient'
+);
+
+INSERT INTO character_weapon_proficiencies (
+  channel_id,
+  user_id,
+  weapon_name
+) VALUES (
+  '644028953719209984',
+  '273957930129424385',
+  'Light Crossbow'
+);
+
+INSERT INTO character_weapon_proficiencies (
+  channel_id,
+  user_id,
+  weapon_name
+) VALUES (
+  '644028953719209984',
+  '273957930129424385',
+  'Dagger'
+);
+
+INSERT INTO character_weapon_proficiencies (
+  channel_id,
+  user_id,
+  weapon_name
+) VALUES (
+  '644028953719209984',
+  '273957930129424385',
+  'Dart'
+);
+
+INSERT INTO character_weapon_proficiencies (
+  channel_id,
+  user_id,
+  weapon_name
+) VALUES (
+  '644028953719209984',
+  '273957930129424385',
+  'Quarterstaff'
+);
+
+INSERT INTO character_weapon_proficiencies (
+  channel_id,
+  user_id,
+  weapon_name
+) VALUES (
+  '644028953719209984',
+  '273957930129424385',
+  'Sling'
 );
