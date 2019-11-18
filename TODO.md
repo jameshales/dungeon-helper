@@ -1,7 +1,10 @@
 # TODO
 
+- Flip a coin.
+- Better shorthand / non-NLP syntax.
 - Have admin / DM options, such as:
     - Perform actions on behalf of a users, such as roll, edit attributes, or view attributes.
+    - Perform actions for everyone in the channel, e.g. initiative rolls, saving throws.
 - Spell rolls.
 - Custom attacks and spells.
 - Parse character sheets from D&D Beyond.
