@@ -58,13 +58,14 @@ impl Check {
             } else {
                 None
             })
-            .or(SkillName::parse(string).map(Check::Skill))
-            .or(RE
-                .captures(string)
-                .and_then(|c| c.get(1))
-                .map(|m| m.as_str())
-                .and_then(AbilityName::parse)
-                .map(Check::SavingThrow))
+            .or_else(|| SkillName::parse(string).map(Check::Skill))
+            .or_else(|| {
+                RE.captures(string)
+                    .and_then(|c| c.get(1))
+                    .map(|m| m.as_str())
+                    .and_then(AbilityName::parse)
+                    .map(Check::SavingThrow)
+            })
     }
 }
 

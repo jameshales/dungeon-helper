@@ -58,7 +58,7 @@ pub fn parse_intent_result(result: &IntentParserResult) -> Result<Command, Error
         })
 }
 
-fn parse_roll_ability(slots: &Vec<Slot>) -> Result<Command, Error> {
+fn parse_roll_ability(slots: &[Slot]) -> Result<Command, Error> {
     let ability = extract_ability_slot(slots);
     let condition = extract_condition_slot(slots);
     ability
@@ -72,7 +72,7 @@ fn parse_roll_ability(slots: &Vec<Slot>) -> Result<Command, Error> {
         })
 }
 
-fn parse_roll_attack(slots: &Vec<Slot>) -> Result<Command, Error> {
+fn parse_roll_attack(slots: &[Slot]) -> Result<Command, Error> {
     let ambiguous_weapon = extract_ambiguous_weapon_slot(slots);
     let classification = extract_classification_slot(slots);
     let condition = extract_condition_slot(slots);
@@ -80,10 +80,12 @@ fn parse_roll_attack(slots: &Vec<Slot>) -> Result<Command, Error> {
     let improvised_weapon = extract_improvised_weapon_slot(slots);
     let weapon = extract_weapon_slot(slots);
     weapon
-        .ok_or(ambiguous_weapon.map_or(
-            Error::RollAttackMissingWeapon,
-            Error::RollAttackAmbiguousWeapon,
-        ))
+        .ok_or_else(|| {
+            ambiguous_weapon.map_or(
+                Error::RollAttackMissingWeapon,
+                Error::RollAttackAmbiguousWeapon,
+            )
+        })
         .and_then(|weapon| {
             if weapon.to_weapon().versatile.is_some() && handedness.is_none() {
                 Err(Error::RollAttackMissingHandedness)
@@ -113,7 +115,7 @@ fn parse_roll_attack(slots: &Vec<Slot>) -> Result<Command, Error> {
         .map(Command::AttackRoll)
 }
 
-fn parse_roll_dice(slots: &Vec<Slot>) -> Result<Command, Error> {
+fn parse_roll_dice(slots: &[Slot]) -> Result<Command, Error> {
     let condition = extract_condition_slot(slots);
     let rolls = extract_usize_slot_value(slots, "rolls").unwrap_or(1);
     let sides = extract_die_slot(slots);
@@ -124,7 +126,7 @@ fn parse_roll_dice(slots: &Vec<Slot>) -> Result<Command, Error> {
     })
 }
 
-fn parse_roll_initiative(slots: &Vec<Slot>) -> Command {
+fn parse_roll_initiative(slots: &[Slot]) -> Command {
     let condition = extract_condition_slot(slots);
     let roll = CharacterRoll {
         check: Check::Initiative,
@@ -133,7 +135,7 @@ fn parse_roll_initiative(slots: &Vec<Slot>) -> Command {
     Command::CharacterRoll(roll)
 }
 
-fn parse_roll_saving_throw(slots: &Vec<Slot>) -> Result<Command, Error> {
+fn parse_roll_saving_throw(slots: &[Slot]) -> Result<Command, Error> {
     let ability = extract_ability_slot(slots);
     let condition = extract_condition_slot(slots);
     ability
@@ -147,7 +149,7 @@ fn parse_roll_saving_throw(slots: &Vec<Slot>) -> Result<Command, Error> {
         })
 }
 
-fn parse_roll_skill(slots: &Vec<Slot>) -> Result<Command, Error> {
+fn parse_roll_skill(slots: &[Slot]) -> Result<Command, Error> {
     let condition = extract_condition_slot(slots);
     let skill = extract_skill_slot(slots);
     skill.ok_or(Error::RollSkillMissingSkill).map(|skill| {
@@ -159,13 +161,13 @@ fn parse_roll_skill(slots: &Vec<Slot>) -> Result<Command, Error> {
     })
 }
 
-fn parse_roll_unarmed_strike(slots: &Vec<Slot>) -> Command {
+fn parse_roll_unarmed_strike(slots: &[Slot]) -> Command {
     let condition = extract_condition_slot(slots);
     let roll = AttackRoll::UnarmedStrike(UnarmedStrikeAttackRoll { condition });
     Command::AttackRoll(roll)
 }
 
-fn parse_set_ability(slots: &Vec<Slot>) -> Result<Command, Error> {
+fn parse_set_ability(slots: &[Slot]) -> Result<Command, Error> {
     let ability = extract_ability_slot(slots);
     let score = extract_i32_slot_value(slots, "score");
     ability
@@ -177,14 +179,14 @@ fn parse_set_ability(slots: &Vec<Slot>) -> Result<Command, Error> {
         })
 }
 
-fn parse_set_level(slots: &Vec<Slot>) -> Result<Command, Error> {
+fn parse_set_level(slots: &[Slot]) -> Result<Command, Error> {
     let level = extract_i32_slot_value(slots, "level");
     level
         .ok_or(Error::SetLevelMissingLevel)
         .map(|level| Command::Set(CharacterAttributeUpdate::Level(level)))
 }
 
-fn parse_set_saving_throw(slots: &Vec<Slot>) -> Result<Command, Error> {
+fn parse_set_saving_throw(slots: &[Slot]) -> Result<Command, Error> {
     let ability = extract_ability_slot(slots);
     let proficiency = extract_proficiency_slot(slots);
     ability
@@ -201,7 +203,7 @@ fn parse_set_saving_throw(slots: &Vec<Slot>) -> Result<Command, Error> {
         })
 }
 
-fn parse_set_skill(slots: &Vec<Slot>) -> Result<Command, Error> {
+fn parse_set_skill(slots: &[Slot]) -> Result<Command, Error> {
     let proficiency = extract_proficiency_slot(slots);
     let skill = extract_skill_slot(slots);
     skill.ok_or(Error::SetSkillMissingSkill).and_then(|skill| {
@@ -216,7 +218,7 @@ fn parse_set_skill(slots: &Vec<Slot>) -> Result<Command, Error> {
     })
 }
 
-fn parse_set_weapon_proficiency(slots: &Vec<Slot>) -> Result<Command, Error> {
+fn parse_set_weapon_proficiency(slots: &[Slot]) -> Result<Command, Error> {
     let ambiguous_weapon = extract_ambiguous_weapon_slot(slots);
     let proficiency = extract_proficiency_slot(slots);
     let weapon = extract_weapon_slot(slots);
@@ -231,69 +233,73 @@ fn parse_set_weapon_proficiency(slots: &Vec<Slot>) -> Result<Command, Error> {
                         weapon, proficient,
                     ))
                 })
-                .or(weapon_proficiency.map(|weapon_proficiency| {
-                    Command::Set(CharacterAttributeUpdate::WeaponCategoryProficiency(
-                        weapon_proficiency,
-                        proficient,
-                    ))
-                }))
-                .ok_or(ambiguous_weapon.map_or(
-                    Error::SetWeaponProficiencyMissingWeaponAndCategory,
-                    Error::SetWeaponProficiencyAmbiguousWeapon,
-                ))
+                .or_else(|| {
+                    weapon_proficiency.map(|weapon_proficiency| {
+                        Command::Set(CharacterAttributeUpdate::WeaponCategoryProficiency(
+                            weapon_proficiency,
+                            proficient,
+                        ))
+                    })
+                })
+                .ok_or_else(|| {
+                    ambiguous_weapon.map_or(
+                        Error::SetWeaponProficiencyMissingWeaponAndCategory,
+                        Error::SetWeaponProficiencyAmbiguousWeapon,
+                    )
+                })
         })
 }
 
-fn parse_show_ability(slots: &Vec<Slot>) -> Result<Command, Error> {
+fn parse_show_ability(slots: &[Slot]) -> Result<Command, Error> {
     let ability = extract_ability_slot(slots);
     ability
         .ok_or(Error::ShowAbilityMissingAbility)
         .map(|ability| Command::Show(CharacterAttribute::Ability(ability)))
 }
 
-fn parse_show_passive_ability(slots: &Vec<Slot>) -> Result<Command, Error> {
+fn parse_show_passive_ability(slots: &[Slot]) -> Result<Command, Error> {
     let ability = extract_ability_slot(slots);
     ability
         .ok_or(Error::ShowPassiveAbilityMissingAbility)
         .map(|ability| Command::Show(CharacterAttribute::PassiveAbility(ability)))
 }
 
-fn parse_show_passive_skill(slots: &Vec<Slot>) -> Result<Command, Error> {
+fn parse_show_passive_skill(slots: &[Slot]) -> Result<Command, Error> {
     let skill = extract_skill_slot(slots);
     skill
         .ok_or(Error::ShowPassiveSkillMissingSkill)
         .map(|skill| Command::Show(CharacterAttribute::PassiveSkill(skill)))
 }
 
-fn parse_show_saving_throw(slots: &Vec<Slot>) -> Result<Command, Error> {
+fn parse_show_saving_throw(slots: &[Slot]) -> Result<Command, Error> {
     let ability = extract_ability_slot(slots);
     ability
         .ok_or(Error::ShowSavingThrowMissingAbility)
         .map(|ability| Command::Show(CharacterAttribute::SavingThrow(ability)))
 }
 
-fn parse_show_skill(slots: &Vec<Slot>) -> Result<Command, Error> {
+fn parse_show_skill(slots: &[Slot]) -> Result<Command, Error> {
     let skill = extract_skill_slot(slots);
     skill
         .ok_or(Error::ShowSkillMissingSkill)
         .map(|skill| Command::Show(CharacterAttribute::Skill(skill)))
 }
 
-fn extract_ability_slot(slots: &Vec<Slot>) -> Option<AbilityName> {
+fn extract_ability_slot(slots: &[Slot]) -> Option<AbilityName> {
     extract_custom_slot_value(slots, "ability").and_then(|value| AbilityName::parse(value.as_ref()))
 }
 
-fn extract_ambiguous_weapon_slot(slots: &Vec<Slot>) -> Option<AmbiguousWeaponName> {
+fn extract_ambiguous_weapon_slot(slots: &[Slot]) -> Option<AmbiguousWeaponName> {
     extract_custom_slot_value(slots, "weapon")
         .and_then(|value| AmbiguousWeaponName::parse(value.as_ref()))
 }
 
-fn extract_classification_slot(slots: &Vec<Slot>) -> Option<Classification> {
+fn extract_classification_slot(slots: &[Slot]) -> Option<Classification> {
     extract_custom_slot_value(slots, "weapon_classification")
         .and_then(|value| Classification::parse(value.as_ref()))
 }
 
-fn extract_condition_slot(slots: &Vec<Slot>) -> Option<Condition> {
+fn extract_condition_slot(slots: &[Slot]) -> Option<Condition> {
     extract_custom_slot_value(slots, "condition").and_then(|value| match value.as_ref() {
         "advantage" => Some(Condition::Advantage),
         "disadvantage" => Some(Condition::Disadvantage),
@@ -301,14 +307,14 @@ fn extract_condition_slot(slots: &Vec<Slot>) -> Option<Condition> {
     })
 }
 
-fn extract_custom_slot_value<'a>(slots: &'a Vec<Slot>, slot_name: &str) -> Option<&'a String> {
+fn extract_custom_slot_value<'a>(slots: &'a [Slot], slot_name: &str) -> Option<&'a String> {
     find_slot_by_name(slots, slot_name).and_then(|slot| match &slot.value {
         SlotValue::Custom(string_value) => Some(&string_value.value),
         _ => None,
     })
 }
 
-fn extract_die_slot(slots: &Vec<Slot>) -> Option<i32> {
+fn extract_die_slot(slots: &[Slot]) -> Option<i32> {
     extract_custom_slot_value(slots, "die").and_then(|value| match value.as_ref() {
         "d100" => Some(100),
         "d20" => Some(20),
@@ -321,20 +327,20 @@ fn extract_die_slot(slots: &Vec<Slot>) -> Option<i32> {
     })
 }
 
-fn extract_handedness_slot(slots: &Vec<Slot>) -> Option<Handedness> {
+fn extract_handedness_slot(slots: &[Slot]) -> Option<Handedness> {
     extract_custom_slot_value(slots, "handedness")
         .and_then(|value| Handedness::parse(value.as_ref()))
 }
 
-fn extract_i32_slot_value<'a>(slots: &'a Vec<Slot>, slot_name: &str) -> Option<i32> {
+fn extract_i32_slot_value<'a>(slots: &'a [Slot], slot_name: &str) -> Option<i32> {
     extract_f64_slot_value(slots, slot_name).and_then(|v| i32::try_from(v as i64).ok())
 }
 
-fn extract_usize_slot_value<'a>(slots: &'a Vec<Slot>, slot_name: &str) -> Option<usize> {
+fn extract_usize_slot_value<'a>(slots: &'a [Slot], slot_name: &str) -> Option<usize> {
     extract_f64_slot_value(slots, slot_name).and_then(|v| usize::try_from(v as i64).ok())
 }
 
-fn extract_f64_slot_value<'a>(slots: &'a Vec<Slot>, slot_name: &str) -> Option<f64> {
+fn extract_f64_slot_value<'a>(slots: &'a [Slot], slot_name: &str) -> Option<f64> {
     slots
         .iter()
         .find(|slot| slot.slot_name == slot_name)
@@ -344,28 +350,28 @@ fn extract_f64_slot_value<'a>(slots: &'a Vec<Slot>, slot_name: &str) -> Option<f
         })
 }
 
-fn extract_improvised_weapon_slot(slots: &Vec<Slot>) -> bool {
+fn extract_improvised_weapon_slot(slots: &[Slot]) -> bool {
     extract_custom_slot_value(slots, "weapon").map_or(false, |v| v == "improvised weapon")
 }
 
-fn extract_proficiency_slot(slots: &Vec<Slot>) -> Option<Proficiency> {
+fn extract_proficiency_slot(slots: &[Slot]) -> Option<Proficiency> {
     extract_custom_slot_value(slots, "proficiency")
         .and_then(|value| Proficiency::parse(value.as_ref()))
 }
 
-fn extract_skill_slot(slots: &Vec<Slot>) -> Option<SkillName> {
+fn extract_skill_slot(slots: &[Slot]) -> Option<SkillName> {
     extract_custom_slot_value(slots, "skill").and_then(|value| SkillName::parse(value.as_ref()))
 }
 
-fn extract_weapon_slot(slots: &Vec<Slot>) -> Option<WeaponName> {
+fn extract_weapon_slot(slots: &[Slot]) -> Option<WeaponName> {
     extract_custom_slot_value(slots, "weapon").and_then(|value| WeaponName::parse(value.as_ref()))
 }
 
-fn extract_weapon_proficiency_slot(slots: &Vec<Slot>) -> Option<Category> {
+fn extract_weapon_proficiency_slot(slots: &[Slot]) -> Option<Category> {
     extract_custom_slot_value(slots, "weapon_proficiency")
         .and_then(|value| Category::parse(value.as_ref()))
 }
 
-fn find_slot_by_name<'a>(slots: &'a Vec<Slot>, slot_name: &str) -> Option<&'a Slot> {
+fn find_slot_by_name<'a>(slots: &'a [Slot], slot_name: &str) -> Option<&'a Slot> {
     slots.iter().find(|slot| slot.slot_name == slot_name)
 }

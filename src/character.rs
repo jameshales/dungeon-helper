@@ -55,8 +55,8 @@ pub struct Character {
 impl Character {
     pub fn get(
         connection: &Connection,
-        channel_id: &ChannelId,
-        user_id: &UserId,
+        channel_id: ChannelId,
+        user_id: UserId,
     ) -> RusqliteResult<Option<Character>> {
         connection
             .query_row(
@@ -148,8 +148,8 @@ impl Character {
 
     pub fn set_level(
         transaction: &Transaction,
-        channel_id: &ChannelId,
-        user_id: &UserId,
+        channel_id: ChannelId,
+        user_id: UserId,
         level: i32,
     ) -> RusqliteResult<usize> {
         let params: &[&dyn ToSql] = &[&level, &channel_id.to_string(), &user_id.to_string()];
@@ -165,8 +165,8 @@ impl Character {
 
     pub fn set_jack_of_all_trades(
         transaction: &Transaction,
-        channel_id: &ChannelId,
-        user_id: &UserId,
+        channel_id: ChannelId,
+        user_id: UserId,
         jack_of_all_trades: bool,
     ) -> RusqliteResult<usize> {
         let params: &[&dyn ToSql] = &[
@@ -234,9 +234,9 @@ impl Character {
 
     pub fn set_ability(
         transaction: &Transaction,
-        channel_id: &ChannelId,
-        user_id: &UserId,
-        name: &AbilityName,
+        channel_id: ChannelId,
+        user_id: UserId,
+        name: AbilityName,
         score: i32,
     ) -> RusqliteResult<usize> {
         let params: &[&dyn ToSql] = &[&score, &channel_id.to_string(), &user_id.to_string()];
@@ -305,9 +305,9 @@ impl Character {
 
     pub fn set_saving_throw(
         transaction: &Transaction,
-        channel_id: &ChannelId,
-        user_id: &UserId,
-        name: &AbilityName,
+        channel_id: ChannelId,
+        user_id: UserId,
+        name: AbilityName,
         proficiency: bool,
     ) -> RusqliteResult<usize> {
         let params: &[&dyn ToSql] = &[&proficiency, &channel_id.to_string(), &user_id.to_string()];
@@ -434,10 +434,10 @@ impl Character {
 
     pub fn set_skill(
         transaction: &Transaction,
-        channel_id: &ChannelId,
-        user_id: &UserId,
-        name: &SkillName,
-        proficiency: &Proficiency,
+        channel_id: ChannelId,
+        user_id: UserId,
+        name: SkillName,
+        proficiency: Proficiency,
     ) -> RusqliteResult<usize> {
         let params: &[&dyn ToSql] = &[&proficiency, &channel_id.to_string(), &user_id.to_string()];
         transaction.execute(
@@ -452,8 +452,8 @@ impl Character {
 
     pub fn set_attribute(
         connection: &mut Connection,
-        channel_id: &ChannelId,
-        user_id: &UserId,
+        channel_id: ChannelId,
+        user_id: UserId,
         attribute: &CharacterAttributeUpdate,
     ) -> RusqliteResult<()> {
         connection.transaction().and_then(|transaction| {
@@ -470,8 +470,8 @@ impl Character {
 
     fn create_if_not_exists(
         transaction: &Transaction,
-        channel_id: &ChannelId,
-        user_id: &UserId,
+        channel_id: ChannelId,
+        user_id: UserId,
     ) -> RusqliteResult<usize> {
         let params: &[&dyn ToSql] = &[&channel_id.to_string(), &user_id.to_string()];
         transaction.execute(
@@ -482,13 +482,13 @@ impl Character {
 
     pub fn update_attribute(
         transaction: &Transaction,
-        channel_id: &ChannelId,
-        user_id: &UserId,
+        channel_id: ChannelId,
+        user_id: UserId,
         attribute: &CharacterAttributeUpdate,
     ) -> RusqliteResult<usize> {
         match attribute {
             CharacterAttributeUpdate::Ability(name, score) => {
-                Character::set_ability(transaction, channel_id, user_id, name, *score)
+                Character::set_ability(transaction, channel_id, user_id, *name, *score)
             }
             CharacterAttributeUpdate::Level(level) => {
                 Character::set_level(transaction, channel_id, user_id, *level)
@@ -502,17 +502,17 @@ impl Character {
                 )
             }
             CharacterAttributeUpdate::SavingThrowProficiency(name, proficient) => {
-                Character::set_saving_throw(transaction, channel_id, user_id, name, *proficient)
+                Character::set_saving_throw(transaction, channel_id, user_id, *name, *proficient)
             }
             CharacterAttributeUpdate::SkillProficiency(name, proficiency) => {
-                Character::set_skill(transaction, channel_id, user_id, name, proficiency)
+                Character::set_skill(transaction, channel_id, user_id, *name, *proficiency)
             }
             CharacterAttributeUpdate::WeaponProficiency(name, proficient) => {
                 Character::set_weapon_proficiency(
                     transaction,
                     channel_id,
                     user_id,
-                    name,
+                    *name,
                     *proficient,
                 )
             }
@@ -521,7 +521,7 @@ impl Character {
                     transaction,
                     channel_id,
                     user_id,
-                    category,
+                    *category,
                     *proficient,
                 )
             }
@@ -530,10 +530,10 @@ impl Character {
 
     pub fn has_weapon_proficiency(
         connection: &Connection,
-        channel_id: &ChannelId,
-        user_id: &UserId,
-        name: &WeaponName,
-        category: &Category,
+        channel_id: ChannelId,
+        user_id: UserId,
+        name: WeaponName,
+        category: Category,
     ) -> RusqliteResult<bool> {
         let params: &[&dyn ToSql] = &[
             &channel_id.to_string(),
@@ -557,9 +557,9 @@ impl Character {
 
     pub fn set_weapon_proficiency(
         transaction: &Transaction,
-        channel_id: &ChannelId,
-        user_id: &UserId,
-        name: &WeaponName,
+        channel_id: ChannelId,
+        user_id: UserId,
+        name: WeaponName,
         proficient: bool,
     ) -> RusqliteResult<usize> {
         let params: &[&dyn ToSql] = &[
@@ -579,9 +579,9 @@ impl Character {
 
     pub fn set_weapon_category_proficiency(
         transaction: &Transaction,
-        channel_id: &ChannelId,
-        user_id: &UserId,
-        category: &Category,
+        channel_id: ChannelId,
+        user_id: UserId,
+        category: Category,
         proficient: bool,
     ) -> RusqliteResult<usize> {
         let params: &[&dyn ToSql] = &[
@@ -601,8 +601,8 @@ impl Character {
 
     pub fn get_weapon_proficiencies(
         connection: &Connection,
-        channel_id: &ChannelId,
-        user_id: &UserId,
+        channel_id: ChannelId,
+        user_id: UserId,
     ) -> RusqliteResult<Vec<WeaponProficiency>> {
         connection.prepare("SELECT weapon_name, weapon_category FROM character_weapon_proficiencies WHERE channel_id = $1 AND user_id = $2 ORDER BY weapon_name, weapon_category ASC")
             .and_then(|mut statement| {
@@ -648,11 +648,11 @@ impl Proficiency {
 impl FromSql for Proficiency {
     fn column_result(value: ValueRef) -> FromSqlResult<Proficiency> {
         value.as_str().and_then(|string| {
-            Proficiency::parse(string).ok_or(FromSqlError::Other(Box::new(
-                InvalidProficiencyValueError {
+            Proficiency::parse(string).ok_or_else(|| {
+                FromSqlError::Other(Box::new(InvalidProficiencyValueError {
                     value: string.to_owned(),
-                },
-            )))
+                }))
+            })
         })
     }
 }

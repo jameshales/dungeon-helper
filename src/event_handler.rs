@@ -63,7 +63,7 @@ impl Handler {
                     .as_ref()
                     .map(|bot_id| Command::parse(engine, content, Some(&bot_id), dice_only))
             })
-            .unwrap_or(Command::parse(engine, content, None, dice_only))
+            .unwrap_or_else(|| Command::parse(engine, content, None, dice_only))
     }
 
     fn get_action(
@@ -97,8 +97,8 @@ impl Handler {
                             } else {
                                 Action::Respond(self.run_command(
                                     command,
-                                    &message.channel_id,
-                                    &message.author.id,
+                                    message.channel_id,
+                                    message.author.id,
                                 ))
                             }
                         }
@@ -109,12 +109,7 @@ impl Handler {
         })
     }
 
-    fn run_command(
-        &self,
-        command: Command,
-        channel_id: &ChannelId,
-        author_id: &UserId,
-    ) -> Response {
+    fn run_command(&self, command: Command, channel_id: ChannelId, author_id: UserId) -> Response {
         match command {
             Command::AttackRoll(roll) => self.attack_roll(&roll, channel_id, author_id),
             Command::CharacterRoll(roll) => self.character_roll(&roll, channel_id, author_id),
@@ -136,7 +131,7 @@ impl Handler {
         }
     }
 
-    fn log_intent_result(&self, message: &Message, intent_result: &IntentParserResult) -> () {
+    fn log_intent_result(&self, message: &Message, intent_result: &IntentParserResult) {
         self.pool
             .get()
             .map_err(|error| error!(target: "dungeon-helper", "Error obtaining database connection. Message ID: {}; Error: {}", message.id, error))
@@ -152,8 +147,8 @@ impl Handler {
     fn attack_roll(
         &self,
         attack_roll: &AttackRoll,
-        channel_id: &ChannelId,
-        author_id: &UserId,
+        channel_id: ChannelId,
+        author_id: UserId,
     ) -> Response {
         self.pool
             .get()
@@ -170,8 +165,8 @@ impl Handler {
                                         &connection,
                                         channel_id,
                                         author_id,
-                                        &attack_roll.weapon,
-                                        &attack_roll.weapon.to_weapon().category,
+                                        attack_roll.weapon,
+                                        attack_roll.weapon.to_weapon().category,
                                     )
                                     .map(|proficiency| (character, proficiency))
                                     .map_err(|error| Response::Error(Error::RusqliteError(error)))
@@ -184,7 +179,7 @@ impl Handler {
             .and_then(|(character, proficiency)| {
                 attack_roll
                     .to_attack_roll(character.strength().map(|a| a.modifier), character.dexterity().map(|a| a.modifier), character.proficiency_bonus(), proficiency)
-                    .ok_or(Response::Warning(ABILITY_NOT_SET_WARNING_TEXT.to_owned()))
+                    .ok_or_else(|| Response::Warning(ABILITY_NOT_SET_WARNING_TEXT.to_owned()))
             })
             .map(|attack_roll_roll| {
                 let mut rng = rand::thread_rng();
@@ -221,8 +216,8 @@ impl Handler {
     fn character_roll(
         &self,
         character_roll: &CharacterRoll,
-        channel_id: &ChannelId,
-        author_id: &UserId,
+        channel_id: ChannelId,
+        author_id: UserId,
     ) -> Response {
         self.pool
             .get()
@@ -232,14 +227,13 @@ impl Handler {
                     .map_err(|error| Response::Error(Error::RusqliteError(error)))
             })
             .and_then(|character| {
-                character.ok_or(Response::Warning(
-                    CHARACTER_NOT_FOUND_WARNING_TEXT.to_owned(),
-                ))
+                character
+                    .ok_or_else(|| Response::Warning(CHARACTER_NOT_FOUND_WARNING_TEXT.to_owned()))
             })
             .and_then(|character| {
                 character_roll
                     .to_roll(&character)
-                    .ok_or(Response::Warning(ABILITY_NOT_SET_WARNING_TEXT.to_owned()))
+                    .ok_or_else(|| Response::Warning(ABILITY_NOT_SET_WARNING_TEXT.to_owned()))
             })
             .map(|roll| {
                 let mut rng = rand::thread_rng();
@@ -253,7 +247,7 @@ impl Handler {
     }
 
     fn help() -> Response {
-        Response::Help(format!(
+        Response::Help(
             "Try typing the following:\n\
              • \"Roll three d8s\"\n\
              • \"Throw two twelve-sided dice\"\n\
@@ -262,11 +256,12 @@ impl Handler {
              • \"Try a stealth roll with disadvantage\"\n\
              • \"Roll for initiative\"\n\
              There are also short-hand commands you can use. Type \"!help\" for more info."
-        ))
+                .to_owned(),
+        )
     }
 
     fn help_shorthand() -> Response {
-        Response::Help(format!(
+        Response::Help(
             "Try typing the following:\n\
              • \"!r 3d8\"\n\
              • \"!r 2d12+3\"\n\
@@ -274,8 +269,9 @@ impl Handler {
              • \"!r wisdom saving throw\"\n\
              • \"!r stealth with disadvantage\"\n\
              • \"!r initiative\"\n\
-             There are also natural language commands you can use. Type \"help\" for more info.",
-        ))
+             There are also natural language commands you can use. Type \"help\" for more info."
+                .to_owned(),
+        )
     }
 
     fn roll(roll: ConditionalRoll) -> Response {
@@ -302,8 +298,8 @@ impl Handler {
     fn set(
         &self,
         attribute: &CharacterAttributeUpdate,
-        channel_id: &ChannelId,
-        author_id: &UserId,
+        channel_id: ChannelId,
+        author_id: UserId,
     ) -> Response {
         self.with_connection(|mut connection| {
             Character::set_attribute(&mut connection, channel_id, author_id, attribute)
@@ -311,7 +307,7 @@ impl Handler {
         })
     }
 
-    fn set_channel_dice_only(&self, channel_id: &ChannelId, dice_only: bool) -> Response {
+    fn set_channel_dice_only(&self, channel_id: ChannelId, dice_only: bool) -> Response {
         self.with_connection(|mut connection| {
             Channel::set_dice_only(&mut connection, channel_id, dice_only).map(|_| {
                 Response::Update(format!(
@@ -322,7 +318,7 @@ impl Handler {
         })
     }
 
-    fn set_channel_enabled(&self, channel_id: &ChannelId, enabled: bool) -> Response {
+    fn set_channel_enabled(&self, channel_id: ChannelId, enabled: bool) -> Response {
         self.with_connection(|mut connection| {
             Channel::set_enabled(&mut connection, channel_id, enabled).map(|_| {
                 Response::Update(format!(
@@ -333,7 +329,7 @@ impl Handler {
         })
     }
 
-    fn set_channel_locked(&self, channel_id: &ChannelId, locked: bool) -> Response {
+    fn set_channel_locked(&self, channel_id: ChannelId, locked: bool) -> Response {
         self.with_connection(|mut connection| {
             Channel::set_locked(&mut connection, channel_id, locked).map(|_| {
                 Response::Update(format!(
@@ -347,8 +343,8 @@ impl Handler {
     fn show(
         &self,
         attribute: &CharacterAttribute,
-        channel_id: &ChannelId,
-        author_id: &UserId,
+        channel_id: ChannelId,
+        author_id: UserId,
     ) -> Response {
         self.with_connection(|connection| {
             Character::get(&connection, channel_id, author_id).map(|character| {
@@ -412,7 +408,7 @@ impl Handler {
         }
     }
 
-    fn show_abilities(&self, channel_id: &ChannelId, author_id: &UserId) -> Response {
+    fn show_abilities(&self, channel_id: ChannelId, author_id: UserId) -> Response {
         self.with_connection(|connection| {
             Character::get(&connection, channel_id, author_id).map(|character| {
                 character.map_or(
@@ -439,7 +435,7 @@ impl Handler {
         })
     }
 
-    fn show_skills(&self, channel_id: &ChannelId, author_id: &UserId) -> Response {
+    fn show_skills(&self, channel_id: ChannelId, author_id: UserId) -> Response {
         self.with_connection(|connection| {
             Character::get(&connection, channel_id, author_id).map(|character| {
                 character.map_or(
@@ -490,12 +486,12 @@ impl Handler {
         })
     }
 
-    fn show_weapon_proficiencies(&self, channel_id: &ChannelId, author_id: &UserId) -> Response {
+    fn show_weapon_proficiencies(&self, channel_id: ChannelId, author_id: UserId) -> Response {
         self.with_connection(|connection| {
             Character::get_weapon_proficiencies(&connection, channel_id, author_id).map(|weapons| {
                 Response::Show(format!(
                     "Weapon proficiencies: {}",
-                    if weapons.len() > 0 {
+                    if !weapons.is_empty() {
                         weapons
                             .iter()
                             .map(|weapon_name| weapon_name.to_string())
@@ -535,15 +531,15 @@ impl Handler {
         })
     }
 
-    fn get_channel(&self, channel_id: &ChannelId) -> Channel {
+    fn get_channel(&self, channel_id: ChannelId) -> Channel {
         self.pool
             .get()
             .ok()
-            .and_then(|mut connection|
-                Channel::get(&mut connection, channel_id)
+            .and_then(|connection|
+                Channel::get(&connection, channel_id)
                     .map_err(|error| error!(target: "dungeon-helper", "Error retrieving channel: Channel ID: {}; Error: {}", channel_id.to_string(), error))
                     .ok()
-                    .map_or(None, identity)
+                    .and_then(identity)
             )
             .unwrap_or(
                 Channel {
@@ -562,7 +558,7 @@ impl EventHandler for Handler {
             // Don't respond to our own messages, this may cause an infinite loop
             Action::IgnoreOwnMessage
         } else {
-            let channel = self.get_channel(&message.channel_id);
+            let channel = self.get_channel(message.channel_id);
             let is_admin = message.member(&ctx.cache).map_or(true, |member| {
                 member
                     .permissions(&ctx.cache)
@@ -576,13 +572,25 @@ impl EventHandler for Handler {
                 // Private channels are implicitly dice only, no need to @me
                 channel.dice_only || is_private,
             );
-            command_result.as_ref().map(|command_result| match command_result {
-                Ok(CommandResult::NaturalLanguage(Ok(command), _)) => info!(target: "dungeon-helper", "Parsed natural language command successfully. Message ID: {}; Command: {:?}", message.id, command),
-                Ok(CommandResult::NaturalLanguage(Err(error), _)) => info!(target: "dungeon-helper", "Error parsing natural language command. Message ID: {}; Error: {:}", message.id, error),
-                Ok(CommandResult::Shorthand(Err(error))) => info!(target: "dungeon-helper", "Error parsing shorthand command. Message ID: {}; Command: {:?}", message.id, error),
-                Ok(CommandResult::Shorthand(Ok(command))) => info!(target: "dungeon-helper", "Parsed shorthand command successfully. Message ID: {}; Command: {:?}", message.id, command),
-                Err(error) => info!(target: "dungeon-helper", "Error parsing command. Message ID: {}; Error: {}", message.id, error)
-            });
+            if let Some(command_result) = command_result.as_ref() {
+                match command_result {
+                    Ok(CommandResult::NaturalLanguage(Ok(command), _)) => {
+                        info!(target: "dungeon-helper", "Parsed natural language command successfully. Message ID: {}; Command: {:?}", message.id, command)
+                    }
+                    Ok(CommandResult::NaturalLanguage(Err(error), _)) => {
+                        info!(target: "dungeon-helper", "Error parsing natural language command. Message ID: {}; Error: {:}", message.id, error)
+                    }
+                    Ok(CommandResult::Shorthand(Err(error))) => {
+                        info!(target: "dungeon-helper", "Error parsing shorthand command. Message ID: {}; Command: {:?}", message.id, error)
+                    }
+                    Ok(CommandResult::Shorthand(Ok(command))) => {
+                        info!(target: "dungeon-helper", "Parsed shorthand command successfully. Message ID: {}; Command: {:?}", message.id, command)
+                    }
+                    Err(error) => {
+                        info!(target: "dungeon-helper", "Error parsing command. Message ID: {}; Error: {}", message.id, error)
+                    }
+                }
+            };
             self.get_action(command_result, &channel, &message, is_admin, is_private)
         };
         match action {
@@ -596,15 +604,12 @@ impl EventHandler for Handler {
                 info!(target: "dungeon-helper", "Ignoring message because it was sent by us. Message ID: {}", message.id);
             }
             Action::Respond(response) => {
-                match &response {
-                    Response::Error(error) => {
-                        error!(target: "dungeon-helper", "Error processing command. Message ID: {}; Error = {:?}", message.id, error);
-                    }
-                    _ => (),
+                if let Response::Error(error) = &response {
+                    error!(target: "dungeon-helper", "Error processing command. Message ID: {}; Error = {:?}", message.id, error);
                 };
                 let result = message
                     .channel_id
-                    .say(&ctx.http, response.render(&message.author.id, &message.id));
+                    .say(&ctx.http, response.render(message.author.id, message.id));
                 match result {
                     Ok(sent_message) => {
                         info!(target: "dungeon-helper", "Sent message. Message ID: {}; Sent Message ID: {}; Content: {}", message.id, sent_message.id, sent_message.content.escape_debug())

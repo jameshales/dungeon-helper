@@ -186,11 +186,11 @@ impl fmt::Display for WeaponName {
 impl FromSql for WeaponName {
     fn column_result(value: ValueRef) -> FromSqlResult<WeaponName> {
         value.as_str().and_then(|string| {
-            WeaponName::parse(string).ok_or(FromSqlError::Other(Box::new(
-                InvalidWeaponNameValueError {
+            WeaponName::parse(string).ok_or_else(|| {
+                FromSqlError::Other(Box::new(InvalidWeaponNameValueError {
                     value: string.to_owned(),
-                },
-            )))
+                }))
+            })
         })
     }
 }
@@ -292,11 +292,11 @@ impl fmt::Display for Category {
 impl FromSql for Category {
     fn column_result(value: ValueRef) -> FromSqlResult<Category> {
         value.as_str().and_then(|string| {
-            Category::parse(string).ok_or(FromSqlError::Other(Box::new(
-                InvalidCategoryValueError {
+            Category::parse(string).ok_or_else(|| {
+                FromSqlError::Other(Box::new(InvalidCategoryValueError {
                     value: string.to_owned(),
-                },
-            )))
+                }))
+            })
         })
     }
 }

@@ -402,6 +402,7 @@ mod test {
             weapon: WeaponName::Greatsword,
             classification: None,
             condition: None,
+            handedness: None,
         };
         let strength = 2;
         let dexterity = 3;
@@ -428,6 +429,7 @@ mod test {
             weapon: WeaponName::Greatsword,
             classification: None,
             condition: Some(Condition::Advantage),
+            handedness: None,
         };
         let strength = 2;
         let dexterity = 3;
@@ -459,6 +461,7 @@ mod test {
             weapon: WeaponName::Greatsword,
             classification: None,
             condition: Some(Condition::Disadvantage),
+            handedness: None,
         };
         let strength = 2;
         let dexterity = 3;
@@ -490,6 +493,7 @@ mod test {
             weapon: WeaponName::Rapier,
             classification: None,
             condition: None,
+            handedness: None,
         };
         let strength = 2;
         let dexterity = 3;
@@ -516,6 +520,7 @@ mod test {
             weapon: WeaponName::Spear,
             classification: Some(Classification::Ranged),
             condition: None,
+            handedness: None,
         };
         let strength = 2;
         let dexterity = 3;
@@ -542,6 +547,7 @@ mod test {
             weapon: WeaponName::Greatsword,
             classification: Some(Classification::Ranged),
             condition: None,
+            handedness: None,
         };
         let strength = 2;
         let dexterity = 3;

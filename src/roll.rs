@@ -126,7 +126,6 @@ impl fmt::Display for ConditionalRollResult {
 /// The number of rolls and sides must not be more than 100.
 #[derive(Debug, Eq, PartialEq)]
 pub enum Error {
-    RollsNonPositive,
     RollsTooGreat,
     SidesNonPositive,
     SidesTooGreat,
@@ -135,7 +134,6 @@ pub enum Error {
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Error::RollsNonPositive => write!(f, "Must roll at least one die"),
             Error::RollsTooGreat => write!(f, "Must roll no more than 100 dice."),
             Error::SidesNonPositive => write!(f, "Dice must have at least one side."),
             Error::SidesTooGreat => write!(f, "Dice must have no more than 100 sides."),
@@ -169,9 +167,7 @@ impl Roll {
     /// Create a roll, validating that the number of dice being rolled, and the number of sides
     /// each die has, are positive and no more than the maximum allowed values.
     pub fn new(rolls: usize, sides: i32, modifier: i32) -> Result<Roll, Error> {
-        if rolls <= 0 {
-            Err(Error::RollsNonPositive)
-        } else if rolls > MAXIMUM_ROLLS {
+        if rolls > MAXIMUM_ROLLS {
             Err(Error::RollsTooGreat)
         } else if sides <= 0 {
             Err(Error::SidesNonPositive)
@@ -226,7 +222,7 @@ impl Roll {
             })
             .ok_or(ParserError::InvalidSyntax)
             .and_then(|(rolls, sides, modifier)| {
-                Roll::new(rolls, sides, modifier).map_err(|e| ParserError::InvalidValue(e))
+                Roll::new(rolls, sides, modifier).map_err(ParserError::InvalidValue)
             })
     }
 
@@ -341,7 +337,7 @@ impl ConditionalRoll {
                     (second, first)
                 };
                 ConditionalRollResult {
-                    primary: primary,
+                    primary,
                     secondary: Some(secondary),
                 }
             }
@@ -352,7 +348,7 @@ impl ConditionalRoll {
                     (second, first)
                 };
                 ConditionalRollResult {
-                    primary: primary,
+                    primary,
                     secondary: Some(secondary),
                 }
             }
@@ -378,14 +374,6 @@ impl fmt::Display for ConditionalRoll {
 mod test {
     use super::*;
     use rand_pcg::Pcg32;
-
-    #[test]
-    fn test_roll_rolls_non_positive() {
-        let expected = Err(Error::RollsNonPositive);
-        let actual = ConditionalRoll::new(0, 20, 0, None);
-
-        assert_eq!(actual, expected);
-    }
 
     #[test]
     fn test_roll_sides_non_positive() {

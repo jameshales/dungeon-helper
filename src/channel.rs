@@ -10,7 +10,7 @@ pub struct Channel {
 }
 
 impl Channel {
-    pub fn get(connection: &Connection, channel_id: &ChannelId) -> RusqliteResult<Option<Channel>> {
+    pub fn get(connection: &Connection, channel_id: ChannelId) -> RusqliteResult<Option<Channel>> {
         connection
             .query_row(
                 "SELECT enabled, locked, dice_only FROM channels WHERE channel_id = $1",
@@ -30,7 +30,7 @@ impl Channel {
 
     pub fn set_enabled(
         connection: &mut Connection,
-        channel_id: &ChannelId,
+        channel_id: ChannelId,
         enabled: bool,
     ) -> RusqliteResult<()> {
         Channel::set_bool_flag(connection, channel_id, "enabled", enabled)
@@ -38,7 +38,7 @@ impl Channel {
 
     pub fn set_locked(
         connection: &mut Connection,
-        channel_id: &ChannelId,
+        channel_id: ChannelId,
         locked: bool,
     ) -> RusqliteResult<()> {
         Channel::set_bool_flag(connection, channel_id, "locked", locked)
@@ -46,7 +46,7 @@ impl Channel {
 
     pub fn set_dice_only(
         connection: &mut Connection,
-        channel_id: &ChannelId,
+        channel_id: ChannelId,
         dice_only: bool,
     ) -> RusqliteResult<()> {
         Channel::set_bool_flag(connection, channel_id, "dice_only", dice_only)
@@ -54,7 +54,7 @@ impl Channel {
 
     fn set_bool_flag(
         connection: &mut Connection,
-        channel_id: &ChannelId,
+        channel_id: ChannelId,
         name: &str,
         value: bool,
     ) -> RusqliteResult<()> {
@@ -73,7 +73,7 @@ impl Channel {
 
     fn create_if_not_exists(
         transaction: &Transaction,
-        channel_id: &ChannelId,
+        channel_id: ChannelId,
     ) -> RusqliteResult<usize> {
         let params: &[&dyn ToSql] = &[&channel_id.to_string()];
         transaction.execute(

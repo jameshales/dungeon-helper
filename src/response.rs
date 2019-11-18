@@ -12,7 +12,7 @@ pub enum Response {
 }
 
 impl Response {
-    pub fn render(&self, author_id: &UserId, message_id: &MessageId) -> String {
+    pub fn render(&self, author_id: UserId, message_id: MessageId) -> String {
         match self {
             Response::Clarification(message) => format!("📎 <@{}> {}", author_id, message),
             Response::DiceRoll(message) => format!("🎲 <@{}> {}", author_id, message),

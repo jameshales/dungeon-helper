@@ -19,7 +19,7 @@ pub fn log_intent_result(
                     .enumerate()
                     .fold(Ok(()), |result, (index, slot)| {
                         result
-                            .and(log_slot(&transaction, &message.id, index as i32, slot))
+                            .and(log_slot(&transaction, message.id, index as i32, slot))
                             .map(|_| ())
                     }),
             )
@@ -49,7 +49,7 @@ fn log_message(
 
 fn log_slot(
     transaction: &Transaction,
-    message_id: &MessageId,
+    message_id: MessageId,
     index: i32,
     slot: &Slot,
 ) -> RusqliteResult<usize> {

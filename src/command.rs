@@ -126,9 +126,6 @@ impl fmt::Display for Error {
                 write!(f, "It looks like you're trying to roll some dice, but I'm not sure what kind of dice you want. Try \"Roll a d20\", \"Throw two four-sided dice\", etc.")
             }
             Error::RollDiceInvalid(error, rolls, sides) => match error {
-                RollError::RollsNonPositive => {
-                    write!(f, "It looks like you're trying to roll {} dice. I can only roll a positive number of dice. Try rolling one or more dice.", rolls)
-                }
                 RollError::RollsTooGreat => {
                     write!(f, "It looks like you're trying to roll {} dice. That's too many dice! Try rolling 100 or fewer dice.", rolls)
                 }
@@ -203,6 +200,9 @@ impl fmt::Display for Error {
     }
 }
 
+type NaturalLanguageCommandResult =
+    Option<Result<(Result<Command, Error>, IntentParserResult), Error>>;
+
 impl Command {
     pub fn is_admin(&self) -> bool {
         match self {
@@ -245,12 +245,12 @@ impl Command {
             })
     }
 
-    pub fn parse_natural_language(
+    fn parse_natural_language(
         engine: &SnipsNluEngine,
         message: &str,
         bot_id: Option<&str>,
         dice_only: bool,
-    ) -> Option<Result<(Result<Command, Error>, IntentParserResult), Error>> {
+    ) -> NaturalLanguageCommandResult {
         Command::extract_at_message(message, bot_id, dice_only).map(|at_message| {
             engine
                 .parse(at_message.trim(), None, None)
@@ -276,7 +276,7 @@ impl Command {
         })
     }
 
-    pub fn parse_shorthand(command: &str) -> Option<Result<Command, Error>> {
+    fn parse_shorthand(command: &str) -> Option<Result<Command, Error>> {
         lazy_static! {
             static ref ROLL_COMMAND_REGEX: Regex = Regex::new(r"^!(?:r|roll) +(.*)$").unwrap();
         }
@@ -289,9 +289,11 @@ impl Command {
                 ConditionalRoll::parse(&roll_command)
                     .map(Command::Roll)
                     .map_err(Error::RollParserError)
-                    .or(CharacterRoll::parse(&roll_command)
-                        .map(Command::CharacterRoll)
-                        .ok_or(Error::CharacterRollParserError)),
+                    .or_else(|_| {
+                        CharacterRoll::parse(&roll_command)
+                            .map(Command::CharacterRoll)
+                            .ok_or(Error::CharacterRollParserError)
+                    }),
             )
         } else {
             None
