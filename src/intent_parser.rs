@@ -1,4 +1,6 @@
-use crate::attack_roll::{AttackRoll, Handedness, ImprovisedWeaponAttackRoll, UnarmedStrikeAttackRoll, WeaponAttackRoll};
+use crate::attack_roll::{
+    AttackRoll, Handedness, ImprovisedWeaponAttackRoll, UnarmedStrikeAttackRoll, WeaponAttackRoll,
+};
 use crate::character::{
     AbilityName, CharacterAttribute, CharacterAttributeUpdate, Proficiency, SkillName,
 };
@@ -90,23 +92,24 @@ fn parse_roll_attack(slots: &Vec<Slot>) -> Result<Command, Error> {
                     weapon,
                     classification,
                     condition,
-                    handedness
+                    handedness,
                 }))
             }
         })
-        .or_else(|error|
+        .or_else(|error| {
             if improvised_weapon {
-                classification.ok_or(Error::RollAttackMissingClassification)
-                    .map(|classification|
+                classification
+                    .ok_or(Error::RollAttackMissingClassification)
+                    .map(|classification| {
                         AttackRoll::ImprovisedWeapon(ImprovisedWeaponAttackRoll {
                             classification,
                             condition,
                         })
-                    )
+                    })
             } else {
                 Err(error)
             }
-        )
+        })
         .map(Command::AttackRoll)
 }
 
@@ -158,9 +161,7 @@ fn parse_roll_skill(slots: &Vec<Slot>) -> Result<Command, Error> {
 
 fn parse_roll_unarmed_strike(slots: &Vec<Slot>) -> Command {
     let condition = extract_condition_slot(slots);
-    let roll = AttackRoll::UnarmedStrike(UnarmedStrikeAttackRoll {
-        condition,
-    });
+    let roll = AttackRoll::UnarmedStrike(UnarmedStrikeAttackRoll { condition });
     Command::AttackRoll(roll)
 }
 

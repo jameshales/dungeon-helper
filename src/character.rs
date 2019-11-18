@@ -57,47 +57,49 @@ impl Character {
         connection: &Connection,
         channel_id: &ChannelId,
         user_id: &UserId,
-    ) -> RusqliteResult<Character> {
-        connection.query_row(
-            "SELECT \
-             level, \
-             jack_of_all_trades, \
-             strength, \
-             dexterity, \
-             constitution, \
-             intelligence, \
-             wisdom, \
-             charisma, \
-             strength_saving_proficiency, \
-             dexterity_saving_proficiency, \
-             constitution_saving_proficiency, \
-             intelligence_saving_proficiency, \
-             wisdom_saving_proficiency, \
-             charisma_saving_proficiency, \
-             acrobatics_proficiency, \
-             animal_handling_proficiency, \
-             arcana_proficiency, \
-             athletics_proficiency, \
-             deception_proficiency, \
-             history_proficiency, \
-             insight_proficiency, \
-             intimidation_proficiency, \
-             investigation_proficiency, \
-             medicine_proficiency, \
-             nature_proficiency, \
-             perception_proficiency, \
-             performance_proficiency, \
-             persuasion_proficiency, \
-             religion_proficiency, \
-             sleight_of_hand_proficiency, \
-             stealth_proficiency, \
-             survival_proficiency \
-             FROM characters \
-             WHERE channel_id = $1 \
-             AND user_id = $2",
-            &[&channel_id.to_string(), &user_id.to_string()],
-            Character::from_row,
-        )
+    ) -> RusqliteResult<Option<Character>> {
+        connection
+            .query_row(
+                "SELECT \
+                 level, \
+                 jack_of_all_trades, \
+                 strength, \
+                 dexterity, \
+                 constitution, \
+                 intelligence, \
+                 wisdom, \
+                 charisma, \
+                 strength_saving_proficiency, \
+                 dexterity_saving_proficiency, \
+                 constitution_saving_proficiency, \
+                 intelligence_saving_proficiency, \
+                 wisdom_saving_proficiency, \
+                 charisma_saving_proficiency, \
+                 acrobatics_proficiency, \
+                 animal_handling_proficiency, \
+                 arcana_proficiency, \
+                 athletics_proficiency, \
+                 deception_proficiency, \
+                 history_proficiency, \
+                 insight_proficiency, \
+                 intimidation_proficiency, \
+                 investigation_proficiency, \
+                 medicine_proficiency, \
+                 nature_proficiency, \
+                 perception_proficiency, \
+                 performance_proficiency, \
+                 persuasion_proficiency, \
+                 religion_proficiency, \
+                 sleight_of_hand_proficiency, \
+                 stealth_proficiency, \
+                 survival_proficiency \
+                 FROM characters \
+                 WHERE channel_id = $1 \
+                 AND user_id = $2",
+                &[&channel_id.to_string(), &user_id.to_string()],
+                Character::from_row,
+            )
+            .optional()
     }
 
     pub fn from_row(row: &Row) -> RusqliteResult<Character> {

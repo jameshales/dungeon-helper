@@ -160,23 +160,26 @@ impl Handler {
             .map_err(|error| Response::Error(Error::R2D2Error(error)))
             .and_then(|connection| {
                 Character::get(&connection, channel_id, author_id)
-                    .map_err(|_| Response::Warning(CHARACTER_NOT_FOUND_WARNING_TEXT.to_owned()))
-                    .and_then(|character| {
-                        match attack_roll {
-                            AttackRoll::Weapon(attack_roll) => {
-                                Character::has_weapon_proficiency(
-                                    &connection,
-                                    channel_id,
-                                    author_id,
-                                    &attack_roll.weapon,
-                                    &attack_roll.weapon.to_weapon().category,
-                                )
-                                .map(|proficiency| (character, proficiency))
-                                .map_err(|error| Response::Error(Error::RusqliteError(error)))
+                    .map_err(|error| Response::Error(Error::RusqliteError(error)))
+                    .and_then(|character| character.map_or(
+                        Err(Response::Warning(CHARACTER_NOT_FOUND_WARNING_TEXT.to_owned())),
+                        |character| {
+                            match attack_roll {
+                                AttackRoll::Weapon(attack_roll) => {
+                                    Character::has_weapon_proficiency(
+                                        &connection,
+                                        channel_id,
+                                        author_id,
+                                        &attack_roll.weapon,
+                                        &attack_roll.weapon.to_weapon().category,
+                                    )
+                                    .map(|proficiency| (character, proficiency))
+                                    .map_err(|error| Response::Error(Error::RusqliteError(error)))
+                                }
+                                _ => Ok((character, false))
                             }
-                            _ => Ok((character, false))
-                        }
-                    })
+                        })
+                    )
             })
             .and_then(|(character, proficiency)| {
                 attack_roll
@@ -226,7 +229,12 @@ impl Handler {
             .map_err(|error| Response::Error(Error::R2D2Error(error)))
             .and_then(|connection| {
                 Character::get(&connection, channel_id, author_id)
-                    .map_err(|_| Response::Warning(CHARACTER_NOT_FOUND_WARNING_TEXT.to_owned()))
+                    .map_err(|error| Response::Error(Error::RusqliteError(error)))
+            })
+            .and_then(|character| {
+                character.ok_or(Response::Warning(
+                    CHARACTER_NOT_FOUND_WARNING_TEXT.to_owned(),
+                ))
             })
             .and_then(|character| {
                 character_roll
@@ -343,8 +351,12 @@ impl Handler {
         author_id: &UserId,
     ) -> Response {
         self.with_connection(|connection| {
-            Character::get(&connection, channel_id, author_id)
-                .map(|character| Response::Show(Handler::show_attribute(&character, attribute)))
+            Character::get(&connection, channel_id, author_id).map(|character| {
+                character.map_or(
+                    Response::Warning(CHARACTER_NOT_FOUND_WARNING_TEXT.to_owned()),
+                    |character| Response::Show(Handler::show_attribute(&character, attribute)),
+                )
+            })
         })
     }
 
@@ -403,21 +415,26 @@ impl Handler {
     fn show_abilities(&self, channel_id: &ChannelId, author_id: &UserId) -> Response {
         self.with_connection(|connection| {
             Character::get(&connection, channel_id, author_id).map(|character| {
-                Response::Show(format!(
-                    "\n\
-                     STR = {}\n\
-                     DEX = {}\n\
-                     CON = {}\n\
-                     INT = {}\n\
-                     WIS = {}\n\
-                     CHA = {}",
-                    Handler::format_ability(character.strength()),
-                    Handler::format_ability(character.dexterity()),
-                    Handler::format_ability(character.constitution()),
-                    Handler::format_ability(character.intelligence()),
-                    Handler::format_ability(character.wisdom()),
-                    Handler::format_ability(character.charisma()),
-                ))
+                character.map_or(
+                    Response::Warning(CHARACTER_NOT_FOUND_WARNING_TEXT.to_owned()),
+                    |character| {
+                        Response::Show(format!(
+                            "\n\
+                             STR = {}\n\
+                             DEX = {}\n\
+                             CON = {}\n\
+                             INT = {}\n\
+                             WIS = {}\n\
+                             CHA = {}",
+                            Handler::format_ability(character.strength()),
+                            Handler::format_ability(character.dexterity()),
+                            Handler::format_ability(character.constitution()),
+                            Handler::format_ability(character.intelligence()),
+                            Handler::format_ability(character.wisdom()),
+                            Handler::format_ability(character.charisma()),
+                        ))
+                    },
+                )
             })
         })
     }
@@ -425,45 +442,50 @@ impl Handler {
     fn show_skills(&self, channel_id: &ChannelId, author_id: &UserId) -> Response {
         self.with_connection(|connection| {
             Character::get(&connection, channel_id, author_id).map(|character| {
-                Response::Show(format!(
-                    "\n\
-                     Acrobatics = {}\n\
-                     Animal Handling = {}\n\
-                     Arcana = {}\n\
-                     Athletics = {}\n\
-                     Deception = {}\n\
-                     History = {}\n\
-                     Insight = {}\n\
-                     Intimidation = {}\n\
-                     Investigation = {}\n\
-                     Medicine = {}\n\
-                     Nature = {}\n\
-                     Perception = {}\n\
-                     Performance = {}\n\
-                     Persuasion = {}\n\
-                     Religion = {}\n\
-                     Sleight of Hand = {}\n\
-                     Stealth = {}\n\
-                     Survival = {}",
-                    Handler::format_skill(character.acrobatics()),
-                    Handler::format_skill(character.animal_handling()),
-                    Handler::format_skill(character.arcana()),
-                    Handler::format_skill(character.athletics()),
-                    Handler::format_skill(character.deception()),
-                    Handler::format_skill(character.history()),
-                    Handler::format_skill(character.insight()),
-                    Handler::format_skill(character.intimidation()),
-                    Handler::format_skill(character.investigation()),
-                    Handler::format_skill(character.medicine()),
-                    Handler::format_skill(character.nature()),
-                    Handler::format_skill(character.perception()),
-                    Handler::format_skill(character.performance()),
-                    Handler::format_skill(character.persuasion()),
-                    Handler::format_skill(character.religion()),
-                    Handler::format_skill(character.sleight_of_hand()),
-                    Handler::format_skill(character.stealth()),
-                    Handler::format_skill(character.survival()),
-                ))
+                character.map_or(
+                    Response::Warning(CHARACTER_NOT_FOUND_WARNING_TEXT.to_owned()),
+                    |character| {
+                        Response::Show(format!(
+                            "\n\
+                             Acrobatics = {}\n\
+                             Animal Handling = {}\n\
+                             Arcana = {}\n\
+                             Athletics = {}\n\
+                             Deception = {}\n\
+                             History = {}\n\
+                             Insight = {}\n\
+                             Intimidation = {}\n\
+                             Investigation = {}\n\
+                             Medicine = {}\n\
+                             Nature = {}\n\
+                             Perception = {}\n\
+                             Performance = {}\n\
+                             Persuasion = {}\n\
+                             Religion = {}\n\
+                             Sleight of Hand = {}\n\
+                             Stealth = {}\n\
+                             Survival = {}",
+                            Handler::format_skill(character.acrobatics()),
+                            Handler::format_skill(character.animal_handling()),
+                            Handler::format_skill(character.arcana()),
+                            Handler::format_skill(character.athletics()),
+                            Handler::format_skill(character.deception()),
+                            Handler::format_skill(character.history()),
+                            Handler::format_skill(character.insight()),
+                            Handler::format_skill(character.intimidation()),
+                            Handler::format_skill(character.investigation()),
+                            Handler::format_skill(character.medicine()),
+                            Handler::format_skill(character.nature()),
+                            Handler::format_skill(character.perception()),
+                            Handler::format_skill(character.performance()),
+                            Handler::format_skill(character.persuasion()),
+                            Handler::format_skill(character.religion()),
+                            Handler::format_skill(character.sleight_of_hand()),
+                            Handler::format_skill(character.stealth()),
+                            Handler::format_skill(character.survival()),
+                        ))
+                    },
+                )
             })
         })
     }
