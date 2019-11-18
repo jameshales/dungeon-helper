@@ -1,0 +1,19 @@
+type: entity
+name: handedness
+values:
+  - - one handed
+    - one hand
+    - one-handed
+    - one-hand
+    - single handed
+    - single-handed
+  - - two handed
+    - two-handed
+    - two hand
+    - two-hand
+    - two hands
+    - two-hands
+    - both hands
+    - both-hands
+    - double handed 
+    - double-handed

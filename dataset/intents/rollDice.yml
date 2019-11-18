@@ -1,0 +1,162 @@
+type: intent
+name: rollDice
+slots:
+  - name: rolls
+    entity: snips/number
+  - name: die
+    entity: die
+  - name: condition
+    entity: condition
+utterances:
+
+  - "[die] under [condition]"
+  - "[die] with [condition]"
+  - "[die]"
+  - "[rolls] [die] under [condition]"
+  - "[rolls] [die] with [condition]"
+  - "[rolls] [die]"
+  - Can you cast me [rolls] dice?
+  - Can you cast me a die?
+  - Can you cast me some dice?
+  - Can you please cast [rolls] dice?
+  - Can you please cast a die?
+  - Can you please cast some dice?
+  - Can you please roll [rolls] dice?
+  - Can you please roll a die?
+  - Can you please roll some dice?
+  - Can you please throw [rolls] dice?
+  - Can you please throw a die?
+  - Can you please throw me [rolls] [die] with [condition]?
+  - Can you please throw me [rolls] [die]?
+  - Can you please throw some dice?
+  - Can you roll me [rolls] dice?
+  - Can you roll me a die?
+  - Can you roll me some dice?
+  - Can you throw me [rolls] [die] please?
+  - Can you throw me [rolls] [die] with [condition] please?
+  - Can you throw me [rolls] [die] with [condition]?
+  - Can you throw me [rolls] [die]?
+  - Can you throw me [rolls] dice?
+  - Can you throw me a [die] please?
+  - Can you throw me a [die] with [condition] please?
+  - Can you throw me a [die] with [condition]?
+  - Can you throw me a [die]?
+  - Can you throw me a die?
+  - Can you throw me some dice?
+  - Cast [rolls] [die] with [condition].
+  - Cast [rolls] [die].
+  - Cast [rolls] dice
+  - Cast [rolls] dice please
+  - Cast [rolls] die
+  - Cast [rolls] die please
+  - Cast a [die] with [condition].
+  - Cast a [die].
+  - Cast a dice
+  - Cast a die
+  - Cast a die please
+  - Cast me [rolls] die
+  - Cast me a die
+  - Cast me some dice
+  - Cast some dice
+  - Cast some dice please
+  - Chuck [rolls] [die] with [condition].
+  - Chuck [rolls] [die].
+  - Chuck a [die] with [condition].
+  - Chuck a [die].
+  - Could you throw [rolls] [die] for me please?
+  - Could you throw [rolls] [die] with [condition] for me please?
+  - Hurl [rolls] [die] with [condition].
+  - Hurl [rolls] [die].
+  - Hurl a [die] with [condition].
+  - Hurl a [die].
+  - I need you to throw me [rolls] [die] with [condition].
+  - I need you to throw me [rolls] [die].
+  - I need you to throw me a [die] with [condition].
+  - I need you to throw me a [die].
+  - Please can you throw me [rolls] [die] with [condition]?
+  - Please can you throw me [rolls] [die]?
+  - Please cast [rolls] dice
+  - Please cast [rolls] die
+  - Please cast a die
+  - Please cast some dice
+  - Please roll [rolls] dice
+  - Please roll [rolls] die
+  - Please roll a die
+  - Please roll some dice
+  - Please throw [rolls] dice
+  - Please throw [rolls] die
+  - Please throw a die
+  - Please throw me [rolls] [die] with [condition].
+  - Please throw me [rolls] [die].
+  - Please throw me a [die] with [condition].
+  - Please throw me a [die].
+  - Please throw some dice
+  - Roll [die] with [condition], [rolls] of them.
+  - Roll [rolls] [die] under [condition].
+  - Roll [rolls] [die] with [condition].
+  - Roll [rolls] [die].
+  - Roll [rolls] dice
+  - Roll [rolls] dice please
+  - Roll [rolls] die
+  - Roll [rolls] die please
+  - Roll [rolls] of [die].
+  - Roll a [die] under [condition].
+  - Roll a [die] with [condition].
+  - Roll a [die].
+  - Roll a dice
+  - Roll a die
+  - Roll a die please
+  - Roll me [rolls] die
+  - Roll me a die
+  - Roll me some dice
+  - Roll some [die], [rolls] of them.
+  - Roll some dice
+  - Roll some dice please
+  - Roll with [condition] [rolls] [die].
+  - Throw [die] under [condition], [rolls] of them.
+  - Throw [rolls] [die] with [condition].
+  - Throw [rolls] [die].
+  - Throw [rolls] dice
+  - Throw [rolls] dice please
+  - Throw [rolls] die
+  - Throw [rolls] die please
+  - Throw [rolls] of [die].
+  - Throw a [die].
+  - Throw a dice
+  - Throw a die
+  - Throw a die please
+  - Throw me [rolls] [die].
+  - Throw me [rolls] die
+  - Throw me a [die].
+  - Throw me a die
+  - Throw me some dice
+  - Throw some [die], [rolls] of them.
+  - Throw some dice
+  - Throw some dice please
+  - Throw under [condition] [rolls] [die].
+  - Toss [rolls] [die].
+  - Toss a [die].
+  - Will you roll me a [die]?
+  - Will you throw me [rolls] [die]?
+  - Would you cast [rolls] dice for me?
+  - Would you cast a die for me?
+  - Would you cast some dice for me?
+  - Would you kindly cast [rolls] dice?
+  - Would you kindly cast a die?
+  - Would you kindly cast some dice?
+  - Would you kindly roll [rolls] dice?
+  - Would you kindly roll a die?
+  - Would you kindly roll some dice?
+  - Would you kindly throw [rolls] dice?
+  - Would you kindly throw a die?
+  - Would you kindly throw me [rolls] [die] with [condition]?
+  - Would you kindly throw me [rolls] [die]?
+  - Would you kindly throw some dice?
+  - Would you roll [rolls] dice for me?
+  - Would you roll a die for me?
+  - Would you roll some dice for me?
+  - Would you throw [rolls] dice for me?
+  - Would you throw a die for me?
+  - Would you throw me [rolls] [die] with [condition]?
+  - Would you throw me [rolls] [die]?
+  - Would you throw some dice for me?

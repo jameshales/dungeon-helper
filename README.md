@@ -24,6 +24,10 @@ In the Discord Developer Portal:
     The `client_id` should match the "Client ID" of your application, found under the "General Information" tab.
 4.  Go to the URL. Use the form to authorise the bot to join a server that you manage.
 
+### Train the Snips NLU model
+
+See separate [README](./train/README.md).
+
 ### Build and run the application
 
 In a local command-line environment:
@@ -34,10 +38,6 @@ In a local command-line environment:
     cargo build --release
     ```
 2.  Set the `DISCORD_TOKEN` environment variable to the bot token noted before.
-    
-    ```
-    export DISCORD_TOKEN=...
-    ```
 3.  Set the `DATABASE_PATH` to the path of a SQLite database, initialised with the SQL schema in `./config/sql/`.
 4.  Set the `MODEL_PATH` to the path of a trained Snips NLU model.
 5.  Set `RUST_LOG=dungeon_helper=info` to enable logging.

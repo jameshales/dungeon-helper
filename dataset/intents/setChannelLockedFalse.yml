@@ -1,0 +1,12 @@
+type: intent
+name: setChannelLockedFalse
+utterances:
+  - Unlock all characters in this channel.
+  - Unlock all characters.
+  - Unlock all.
+  - Unlock characters in this channel.
+  - Unlock this channel.
+  - Unlock.
+  - Set characters in this channel to unlocked.
+  - Set this channel to unlocked.
+

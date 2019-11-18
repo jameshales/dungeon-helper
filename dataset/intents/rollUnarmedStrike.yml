@@ -1,0 +1,85 @@
+type: intent
+name: rollUnarmedStrike
+slots:
+  - name: condition
+    entity: condition
+utterances:
+  - "Unarmed strike check under [condition]"
+  - "Unarmed strike check"
+  - "Unarmed strike roll with [condition]"
+  - "Unarmed strike roll"
+  - "Unarmed strike throw under [condition]"
+  - "Unarmed strike throw"
+  - "Unarmed strike with [condition]"
+  - "Unarmed strike"
+  - Attack check with unarmed strike
+  - Attack check with unarmed strike with [condition]
+  - Attack roll with unarmed strike
+  - Attack roll with unarmed strike with [condition]
+  - Attack throw with unarmed strike
+  - Attack throw with unarmed strike with [condition]
+  - Attack unarmed strike
+  - Attack unarmed strike with [condition]
+  - Attack with unarmed strike
+  - Attack with unarmed strike under [condition]
+  - Can you perform a unarmed strike with [condition]?
+  - Can you perform a unarmed strike?
+  - Can you perform an attack with unarmed strike under [condition]?
+  - Can you perform an attack with unarmed strike?
+  - Can you throw an attack with unarmed strike for me under [condition]?
+  - Can you throw an attack with unarmed strike for me?
+  - Can you throw an unarmed strike for me under [condition]?
+  - Can you throw an unarmed strike for me?
+  - Check unarmed strike
+  - Check unarmed strike under [condition]
+  - Check unarmed strike with [condition]
+  - Do a attack check with unarmed strike
+  - Do a attack check with unarmed strike under [condition]
+  - Do a unarmed strike
+  - Do a unarmed strike check
+  - Do a unarmed strike check with [condition]
+  - Do a unarmed strike roll
+  - Do a unarmed strike roll under [condition]
+  - Do a unarmed strike throw
+  - Do a unarmed strike throw with [condition]
+  - Do a unarmed strike under [condition]
+  - Do an attack roll with unarmed strike
+  - Do an attack roll with unarmed strike under [condition]
+  - Do an attack throw with unarmed strike
+  - Do an attack throw with unarmed strike under [condition]
+  - Do an attack with unarmed strike
+  - Do an attack with unarmed strike with [condition]
+  - Perform a unarmed strike
+  - Perform a unarmed strike check
+  - Perform a unarmed strike check with [condition]
+  - Perform a unarmed strike roll
+  - Perform a unarmed strike roll under [condition]
+  - Perform a unarmed strike throw
+  - Perform a unarmed strike throw with [condition]
+  - Perform a unarmed strike under [condition]
+  - Perform an attack check with unarmed strike
+  - Perform an attack check with unarmed strike under [condition]
+  - Perform an attack roll with unarmed strike
+  - Perform an attack roll with unarmed strike under [condition]
+  - Perform an attack throw with unarmed strike
+  - Perform an attack throw with unarmed strike under [condition]
+  - Perform an attack with unarmed strike
+  - Perform an attack with unarmed strike with [condition]
+  - Please do a unarmed strike.
+  - Please do a unarmed strike. under [condition]
+  - Please do an attack with unarmed strike with [condition]
+  - Please do an attack with unarmed strike.
+  - Roll attack with unarmed strike
+  - Roll attack with unarmed strike under [condition]
+  - Roll unarmed strike
+  - Roll unarmed strike under [condition]
+  - Roll unarmed strike with [condition]
+  - Throw attack with unarmed strike
+  - Throw attack with unarmed strike under [condition]
+  - Throw unarmed strike
+  - Throw unarmed strike under [condition]
+  - Throw unarmed strike with [condition]
+  - Would you perform a unarmed strike please?
+  - Would you perform a unarmed strike with [condition] please?
+  - Would you perform an attack with unarmed strike please?
+  - Would you perform an attack with unarmed strike under [condition] please?

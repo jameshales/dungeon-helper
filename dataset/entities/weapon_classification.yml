@@ -1,0 +1,5 @@
+type: entity
+name: weapon_classification
+values:
+  - melee
+  - ranged

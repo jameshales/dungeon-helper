@@ -1,0 +1,27 @@
+type: intent
+name: setChannelEnabledTrue
+utterances:
+  - Activate Dungeon Helper for the current channel.
+  - Activate Dungeon Helper in this channel.
+  - Activate Dungeon Helper.
+  - Activate bot for the current channel.
+  - Activate bot in this channel.
+  - Activate bot.
+  - Become enabled in this channel.
+  - Become enabled.
+  - Enable Dungeon Helper in channel.
+  - Enable Dungeon Helper.
+  - Enable bot in channel.
+  - Enable bot.
+  - Enable yourself for the current channel.
+  - Enable yourself.
+  - Make Dungeon Helper enabled with this channel.
+  - Make Dungeon Helper enabled.
+  - Make bot enabled with this channel.
+  - Make bot enabled.
+  - Make yourself enabled in this channel.
+  - Make yourself enabled.
+  - Turn on Dungeon Helper for this channel.
+  - Turn on Dungeon Helper.
+  - Turn on bot for this channel.
+  - Turn on bot.

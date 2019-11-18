@@ -1,0 +1,79 @@
+type: entity
+name: weapon
+automatically_extensible: false
+values:
+  - - battleaxe
+    - battle axe
+    - battle-axe
+  - - club
+  - - crossbow, hand
+    - hand crossbow
+  - - crossbow, heavy
+    - heavy crossbow
+  - - crossbow, light
+    - light crossbow
+  - - dagger
+  - - dart
+  - - flail
+  - - glaive
+  - - greataxe
+    - great axe
+    - great-axe
+  - - greatclub
+    - great club
+    - great-club
+  - - greatsword
+    - great sword
+    - great-sword
+  - - halberd
+  - - handaxe
+    - hand axe
+    - hand-axe
+  - - javelin
+  - - lance
+  - - light hammer
+  - - longbow
+    - long bow
+    - long-bow
+  - - longsword
+    - long sword
+    - long-sword
+  - - mace
+  - - maul
+  - - morningstar
+    - morning star
+    - morning-star
+  - - pike
+  - - quarterstaff
+    - quarter staff
+    - quarter-staff
+    - staff
+  - - rapier
+  - - scimitar
+  - - shortbow
+    - short bow
+    - short-bow
+  - - shortsword
+    - short sword
+    - short-sword
+  - - sickle
+  - - sling
+  - - spear
+  - - trident
+  - - war pick
+    - warpick
+    - war-pick
+    - pick
+  - - warhammer
+    - war hammer
+    - war-hammer
+  - - whip
+  - - improvised weapon
+    - improvised
+# Ambiguous weapons
+# If we encounter these weapons, ask for a more specific example. 
+  - axe
+  - crossbow
+  - hammer
+  - bow
+  - sword

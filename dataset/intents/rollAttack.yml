@@ -1,0 +1,305 @@
+type: intent
+name: rollAttack
+slots:
+  - name: condition
+    entity: condition
+  - name: handedness
+    entity: handedness
+  - name: weapon
+    entity: weapon
+  - name: weapon_classification
+    entity: weapon_classification
+utterances:
+  - "[weapon_classification] [weapon] attack with [condition]"
+  - "[weapon_classification] [weapon] attack"
+  - "[weapon_classification] [weapon] check under [condition]"
+  - "[weapon_classification] [weapon] check"
+  - "[weapon_classification] [weapon] throw under [condition]"
+  - "[weapon_classification] [weapon] with [condition]"
+  - "[weapon_classification] [weapon]"
+  - "[weapon_classification] attack roll under [condition]"
+  - "[weapon_classification] attack roll"
+  - "[weapon_classification] attack throw"
+  - "[weapon_classification] attack with [weapon]"
+  - "[weapon_classification] attack"
+  - "[weapon] attack as [weapon_classification] with [condition]"
+  - "[weapon] attack as [weapon_classification]"
+  - "[weapon] attack with [condition]"
+  - "[weapon] attack"
+  - "[weapon] check as [weapon_classification] under [condition]"
+  - "[weapon] check as [weapon_classification]"
+  - "[weapon] check under [condition]"
+  - "[weapon] check"
+  - "[weapon] roll as [weapon_classification] with [condition]"
+  - "[weapon] roll as [weapon_classification]"
+  - "[weapon] roll with [condition]"
+  - "[weapon] roll"
+  - "[weapon] throw as [weapon_classification]"
+  - "[weapon] throw under [condition]"
+  - "[weapon] throw"
+  - "[weapon] with [condition]"
+  - "[weapon]"
+
+  - "[handedness] [weapon_classification] [weapon] attack with [condition]"
+  - "[weapon_classification] [handedness] [weapon] attack"
+  - "[handedness] [weapon_classification] [weapon] check under [condition]"
+  - "[weapon_classification] [handedness] [weapon] check"
+  - "[handedness] [weapon_classification] [weapon] throw under [condition]"
+  - "[weapon_classification] [handedness] [weapon] with [condition]"
+  - "[handedness] [weapon_classification] [weapon] with [handedness]"
+  - "[handedness] [weapon_classification] attack roll under [condition]"
+  - "[weapon_classification] attack roll with [handedness]"
+  - "[handedness] [weapon_classification] attack throw"
+  - "[handedness] [weapon_classification] attack with [weapon]"
+  - "[handedness] [weapon_classification] attack"
+  - "[handedness] [weapon] attack as [weapon_classification] with [condition]"
+  - "[handedness] [weapon] attack as [weapon_classification]"
+  - "[handedness] [weapon] attack with [condition]"
+  - "[handedness] [weapon] attack"
+  - "[handedness] [weapon] check as [weapon_classification] under [condition]"
+  - "[handedness] [weapon] check as [weapon_classification]"
+  - "[handedness] [weapon] check under [condition]"
+  - "[handedness] [weapon] check"
+  - "[handedness] [weapon] roll as [weapon_classification] with [condition]"
+  - "[handedness] [weapon] roll as [weapon_classification]"
+  - "[handedness] [weapon] roll with [condition]"
+  - "[handedness] [weapon] roll"
+  - "[handedness] [weapon] throw as [weapon_classification]"
+  - "[handedness] [weapon] throw under [condition]"
+  - "[handedness] [weapon] throw"
+  - "[handedness] [weapon] with [condition]"
+  - "[handedness] [weapon]"
+  - "[weapon] attack as [weapon_classification] with [handedness]"
+  - "[weapon] attack with [handedness]"
+  - "[weapon] attack with [handedness]"
+  - "[weapon] check as [weapon_classification] under [condition] with [handedness]"
+  - "[weapon] check as [weapon_classification] with [handedness]"
+  - "[weapon] check under [condition] with [handedness]"
+  - "[weapon] check with [handedness]"
+  - "[weapon] roll as [weapon_classification] with [handedness]"
+  - "[weapon] roll as [weapon_classification] with [handedness]"
+  - "[weapon] roll with [handedness]"
+  - "[weapon] roll with [handedness]"
+  - "[weapon] throw as [weapon_classification]"
+  - "[weapon] throw under [condition] with [handedness]"
+  - "[weapon] throw with [handedness]"
+  - "[weapon] with [handedness]"
+  - "[weapon] with [handedness]"
+  - Attack
+  - Attack [weapon]
+  - Attack [weapon] as [weapon_classification]
+  - Attack [weapon] as [weapon_classification] with [condition]
+  - Attack [weapon] with [condition]
+  - Attack as [weapon_classification] under [condition]
+  - Attack check
+  - Attack check as [weapon_classification] under [condition]
+  - Attack check under [condition]
+  - Attack check with [weapon]
+  - Attack check with [weapon] as [weapon_classification]
+  - Attack check with [weapon] as [weapon_classification] with [condition]
+  - Attack check with [weapon] with [condition]
+  - Attack roll
+  - Attack roll under [condition]
+  - Attack roll with [weapon]
+  - Attack roll with [weapon] as [weapon_classification]
+  - Attack roll with [weapon] as [weapon_classification] with [condition]
+  - Attack roll with [weapon] with [condition]
+  - Attack throw
+  - Attack throw as [weapon_classification] under [condition]
+  - Attack throw under [condition]
+  - Attack throw with [weapon]
+  - Attack throw with [weapon] as [weapon_classification]
+  - Attack throw with [weapon] as [weapon_classification] with [condition]
+  - Attack throw with [weapon] with [condition]
+  - Attack under [condition]
+  - Attack with [weapon]
+  - Attack with [weapon] as [weapon_classification]
+  - Attack with [weapon] as [weapon_classification] under [condition]
+  - Attack with [weapon] under [condition]
+  - Can you perform a [weapon_classification] [weapon] attack?
+  - Can you perform a [weapon_classification] attack with [condition]?
+  - Can you perform a [weapon_classification] attack with [weapon]?
+  - Can you perform a [weapon_classification] attack?
+  - Can you perform a [weapon] attack as [weapon_classification] with [condition]?
+  - Can you perform a [weapon] attack with [condition]?
+  - Can you perform a [weapon] attack?
+  - Can you perform an attack with [condition]?
+  - Can you perform an attack with [weapon] as [weapon_classification] under [condition]?
+  - Can you perform an attack with [weapon] under [condition]?
+  - Can you perform an attack with [weapon]?
+  - Can you perform an attack?
+  - Can you throw a [weapon_classification] [weapon] attack for me under [condition]?
+  - Can you throw a [weapon_classification] attack for me with [condition]?
+  - Can you throw a [weapon_classification] attack for me?
+  - Can you throw a [weapon_classification] attack with [weapon] for me?
+  - Can you throw an [weapon] [weapon_classification] attack for me?
+  - Can you throw an [weapon] attack for me under [condition]?
+  - Can you throw an [weapon] attack for me?
+  - Can you throw an attack for me with [condition]?
+  - Can you throw an attack for me?
+  - Can you throw an attack with [weapon] as [weapon_classification] for me under [condition]?
+  - Can you throw an attack with [weapon] for me under [condition]?
+  - Can you throw an attack with [weapon] for me?
+  - Check [weapon_classification] [weapon] attack
+  - Check [weapon_classification] attack
+  - Check [weapon_classification] attack with [condition]
+  - Check [weapon]
+  - Check [weapon] [weapon_classification] attack
+  - Check [weapon] as [weapon_classification]
+  - Check [weapon] attack
+  - Check [weapon] attack as [weapon_classification] under [condition]
+  - Check [weapon] attack under [condition]
+  - Check [weapon] with [condition]
+  - Check [weapon] with [condition] as [weapon_classification]
+  - Check attack
+  - Check attack with [condition]
+  - Do a [weapon_classification] [weapon] attack
+  - Do a [weapon_classification] [weapon] attack check
+  - Do a [weapon_classification] [weapon] attack check with [condition]
+  - Do a [weapon_classification] [weapon] attack roll
+  - Do a [weapon_classification] [weapon] attack roll under [condition]
+  - Do a [weapon_classification] [weapon] attack throw
+  - Do a [weapon_classification] attack
+  - Do a [weapon_classification] attack check
+  - Do a [weapon_classification] attack check under [condition]
+  - Do a [weapon_classification] attack roll
+  - Do a [weapon_classification] attack roll with [condition]
+  - Do a [weapon_classification] attack roll with [weapon]
+  - Do a [weapon_classification] attack roll with [weapon] under [condition]
+  - Do a [weapon_classification] attack throw
+  - Do a [weapon_classification] attack throw with [condition]
+  - Do a [weapon_classification] attack throw with [weapon]
+  - Do a [weapon_classification] attack throw with [weapon] under [condition]
+  - Do a [weapon_classification] attack with [condition]
+  - Do a [weapon_classification] attack with [weapon]
+  - Do a [weapon_classification] attack with [weapon] with [condition]
+  - Do a [weapon] [weapon_classification] attack throw with [condition]
+  - Do a [weapon] attack
+  - Do a [weapon] attack as [weapon_classification] under [condition]
+  - Do a [weapon] attack check
+  - Do a [weapon] attack check with [condition]
+  - Do a [weapon] attack roll
+  - Do a [weapon] attack roll under [condition]
+  - Do a [weapon] attack throw
+  - Do a [weapon] attack throw with [condition]
+  - Do a [weapon] attack under [condition]
+  - Do a attack check with [weapon]
+  - Do a attack check with [weapon] under [condition]
+  - Do an attack
+  - Do an attack check
+  - Do an attack check under [condition]
+  - Do an attack roll
+  - Do an attack roll with [condition]
+  - Do an attack roll with [weapon]
+  - Do an attack roll with [weapon] under [condition]
+  - Do an attack throw
+  - Do an attack throw with [condition]
+  - Do an attack throw with [weapon]
+  - Do an attack throw with [weapon] under [condition]
+  - Do an attack with [condition]
+  - Do an attack with [weapon]
+  - Do an attack with [weapon] with [condition]
+  - Perform a [weapon_classification] [weapon] attack
+  - Perform a [weapon_classification] [weapon] attack check
+  - Perform a [weapon_classification] [weapon] attack check with [condition]
+  - Perform a [weapon_classification] [weapon] attack roll
+  - Perform a [weapon_classification] [weapon] attack roll under [condition]
+  - Perform a [weapon_classification] [weapon] attack throw
+  - Perform a [weapon_classification] [weapon] attack throw with [condition]
+  - Perform a [weapon_classification] [weapon] attack under [condition]
+  - Perform a [weapon_classification] attack
+  - Perform a [weapon_classification] attack check
+  - Perform a [weapon_classification] attack check with [condition]
+  - Perform a [weapon_classification] attack check with [weapon]
+  - Perform a [weapon_classification] attack check with [weapon] under [condition]
+  - Perform a [weapon_classification] attack roll
+  - Perform a [weapon_classification] attack roll with [condition]
+  - Perform a [weapon_classification] attack roll with [weapon]
+  - Perform a [weapon_classification] attack roll with [weapon] under [condition]
+  - Perform a [weapon_classification] attack throw
+  - Perform a [weapon_classification] attack throw with [condition]
+  - Perform a [weapon_classification] attack throw with [weapon]
+  - Perform a [weapon_classification] attack throw with [weapon] under [condition]
+  - Perform a [weapon_classification] attack under [condition]
+  - Perform a [weapon_classification] attack with [weapon]
+  - Perform a [weapon_classification] attack with [weapon] with [condition]
+  - Perform a [weapon] attack
+  - Perform a [weapon] attack check
+  - Perform a [weapon] attack check with [condition]
+  - Perform a [weapon] attack roll
+  - Perform a [weapon] attack roll under [condition]
+  - Perform a [weapon] attack throw
+  - Perform a [weapon] attack throw with [condition]
+  - Perform a [weapon] attack under [condition]
+  - Perform an attack
+  - Perform an attack check
+  - Perform an attack check with [condition]
+  - Perform an attack check with [weapon]
+  - Perform an attack check with [weapon] under [condition]
+  - Perform an attack roll
+  - Perform an attack roll with [condition]
+  - Perform an attack roll with [weapon]
+  - Perform an attack roll with [weapon] under [condition]
+  - Perform an attack throw
+  - Perform an attack throw with [condition]
+  - Perform an attack throw with [weapon]
+  - Perform an attack throw with [weapon] under [condition]
+  - Perform an attack under [condition]
+  - Perform an attack with [weapon]
+  - Perform an attack with [weapon] with [condition]
+  - Please do a [weapon_classification] [weapon] attack.
+  - Please do a [weapon_classification] [weapon] attack. under [condition]
+  - Please do a [weapon_classification] attack under [condition]
+  - Please do a [weapon_classification] attack with [weapon] with [condition]
+  - Please do a [weapon_classification] attack with [weapon].
+  - Please do a [weapon_classification] attack.
+  - Please do a [weapon] attack.
+  - Please do a [weapon] attack. under [condition]
+  - Please do an attack under [condition]
+  - Please do an attack with [weapon] with [condition]
+  - Please do an attack with [weapon].
+  - Please do an attack.
+  - Roll [weapon_classification] [weapon]
+  - Roll [weapon_classification] [weapon] attack
+  - Roll [weapon_classification] [weapon] attack under [condition]
+  - Roll [weapon_classification] [weapon] with [condition]
+  - Roll [weapon_classification] attack
+  - Roll [weapon_classification] attack with [condition]
+  - Roll [weapon_classification] attack with [weapon]
+  - Roll [weapon_classification] attack with [weapon] under [condition]
+  - Roll [weapon]
+  - Roll [weapon] attack
+  - Roll [weapon] attack under [condition]
+  - Roll [weapon] with [condition]
+  - Roll attack
+  - Roll attack with [condition]
+  - Roll attack with [weapon]
+  - Roll attack with [weapon] under [condition]
+  - Throw [weapon_classification] [weapon]
+  - Throw [weapon_classification] [weapon] attack
+  - Throw [weapon_classification] [weapon] attack under [condition]
+  - Throw [weapon_classification] [weapon] with [condition]
+  - Throw [weapon_classification] attack
+  - Throw [weapon_classification] attack with [condition]
+  - Throw [weapon_classification] attack with [weapon]
+  - Throw [weapon_classification] attack with [weapon] under [condition]
+  - Throw [weapon]
+  - Throw [weapon] attack
+  - Throw [weapon] attack under [condition]
+  - Throw [weapon] with [condition]
+  - Throw attack
+  - Throw attack with [condition]
+  - Throw attack with [weapon]
+  - Throw attack with [weapon] under [condition]
+  - Would you perform a [weapon_classification] [weapon] attack please?
+  - Would you perform a [weapon_classification] [weapon] attack with [condition] please?
+  - Would you perform a [weapon_classification] attack please?
+  - Would you perform a [weapon_classification] attack under [condition] please?
+  - Would you perform a [weapon_classification] attack with [weapon] please?
+  - Would you perform a [weapon_classification] attack with [weapon] under [condition] please?
+  - Would you perform a [weapon] attack please?
+  - Would you perform a [weapon] attack with [condition] please?
+  - Would you perform an attack please?
+  - Would you perform an attack under [condition] please?
+  - Would you perform an attack with [weapon] please?
+  - Would you perform an attack with [weapon] under [condition] please?

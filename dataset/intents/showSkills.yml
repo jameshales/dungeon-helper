@@ -1,0 +1,24 @@
+type: intent
+name: showSkills
+utterances:
+  - All skill modifiers
+  - All skills
+  - Display all skills
+  - Display skill modifiers.
+  - Display skills.
+  - Print skills.
+  - Show all my skills
+  - Show all skills
+  - Show me my skills.
+  - Show my my skill modifiers.
+  - Show skills.
+  - Skill modifiers
+  - Skill modifiers?
+  - Skills
+  - Skills?
+  - Tell me my skill modifiers.
+  - Tell me my skills.
+  - What are my skill modifiers?
+  - What are my skills?
+  - What skill modifiers do I have?
+  - What skills do I have?

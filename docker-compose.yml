@@ -10,5 +10,5 @@ services:
     - MODEL_PATH=/opt/dungeon-helper/share/model
     - RUST_LOG=dungeon-helper=INFO
     volumes:
-    - ${PWD}/../snips-nlu-example/model:/opt/dungeon-helper/share/model
+    - ${PWD}/model/:/opt/dungeon-helper/share/model/
     - ${PWD}/data/:/opt/dungeon-helper/var/data/

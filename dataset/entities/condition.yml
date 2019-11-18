@@ -1,0 +1,7 @@
+type: entity
+name: condition
+automatically_extensible: false
+matching_strictness: 0.8
+values:
+  - advantage
+  - disadvantage

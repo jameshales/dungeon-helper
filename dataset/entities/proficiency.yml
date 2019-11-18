@@ -1,0 +1,8 @@
+type: entity
+name: proficiency
+automatically_extensible: false
+matching_strictness: 0.8
+values:
+  - [normal, default, none, not proficient, not expert]
+  - [proficient, proficiency]
+  - [expert, expertise]

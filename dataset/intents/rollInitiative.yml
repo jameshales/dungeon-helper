@@ -1,0 +1,38 @@
+type: intent
+name: rollInitiative
+slots:
+  - name: condition
+    entity: condition
+utterances:
+  - Can you throw an initiative roll?
+  - Can you throw initiative?
+  - Cast for initiative.
+  - Cast intiative.
+  - Check initiative under [condition].
+  - Check initiative with [condition] for me.
+  - Do an [condition] initiative check.
+  - Do an initiative check.
+  - Do an initiative roll for me.
+  - Do an initiative roll.
+  - Do me an initiative roll with [condition].
+  - Do me an initiative roll.
+  - Initiative check.
+  - Initiative roll.
+  - Initiative.
+  - Please roll for initiative.
+  - Please throw an initiative roll.
+  - Please throw me an initiative roll.
+  - Roll initiative.
+  - Roll an initiative check.
+  - Roll for initiative with [condition].
+  - Roll for initiative.
+  - Roll initiative under [condition].
+  - Throw an initiative check.
+  - Throw an initiative roll.
+  - Throw for initiative.
+  - Throw initiative.
+  - Throw initiative under [condition].
+  - Throw initiative with [condition].
+  - Throw me initiative.
+  - Time to roll for initiative.
+  - Will you throw initiative for me?

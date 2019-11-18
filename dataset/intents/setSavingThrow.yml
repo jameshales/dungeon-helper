@@ -1,0 +1,118 @@
+type: intent
+name: setSavingThrow
+slots:
+  - name: ability
+    entity: ability
+  - name: proficiency
+    entity: proficiency
+utterances:
+  - Change [ability] ability proficiency to [proficiency].
+  - Change [ability] proficiency to [proficiency].
+  - Change [ability] saving throw proficiency to [proficiency].
+  - Change [ability] saving throw to [proficiency].
+  - Change [ability] to [proficiency].
+  - Change [ability] to proficiency [proficiency].
+  - Change ability [ability] proficiency to [proficiency].
+  - Change ability [ability] saving throw proficiency to [proficiency].
+  - Change ability [ability] saving throw to [proficiency].
+  - Change ability [ability] saving throw to proficiency [proficiency].
+  - Change ability [ability] to [proficiency].
+  - Change ability [ability] to proficiency [proficiency].
+  - Change my [ability] ability proficiency to [proficiency].
+  - Change my [ability] proficiency to [proficiency].
+  - Change my [ability] saving throw ability proficiency to [proficiency].
+  - Change my [ability] saving throw proficiency to [proficiency].
+  - Change my [ability] saving throw to [proficiency].
+  - Change my [ability] saving throw to proficiency [proficiency].
+  - Change my [ability] to [proficiency].
+  - Change my [ability] to proficiency [proficiency].
+  - Change my ability [ability] proficiency to [proficiency].
+  - Change my ability [ability] saving throw proficiency to [proficiency].
+  - Change my ability [ability] saving throw to [proficiency].
+  - Change my ability [ability] saving throw to proficiency [proficiency].
+  - Change my ability [ability] to [proficiency].
+  - Change my ability [ability] to proficiency [proficiency].
+  - Replace [ability] ability proficiency with [proficiency].
+  - Replace [ability] proficiency with [proficiency].
+  - Replace [ability] saving throw ability proficiency with [proficiency].
+  - Replace [ability] saving throw proficiency with [proficiency].
+  - Replace [ability] saving throw with [proficiency].
+  - Replace [ability] saving throw with proficiency [proficiency].
+  - Replace [ability] with [proficiency].
+  - Replace [ability] with proficiency [proficiency].
+  - Replace ability [ability] proficiency with [proficiency].
+  - Replace ability [ability] saving throw proficiency with [proficiency].
+  - Replace ability [ability] saving throw with [proficiency].
+  - Replace ability [ability] saving throw with proficiency [proficiency].
+  - Replace ability [ability] with [proficiency].
+  - Replace ability [ability] with proficiency [proficiency].
+  - Replace my [ability] ability proficiency with [proficiency].
+  - Replace my [ability] proficiency with [proficiency].
+  - Replace my [ability] saving throw ability proficiency with [proficiency].
+  - Replace my [ability] saving throw proficiency with [proficiency].
+  - Replace my [ability] saving throw with [proficiency].
+  - Replace my [ability] saving throw with proficiency [proficiency].
+  - Replace my [ability] with [proficiency].
+  - Replace my [ability] with proficiency [proficiency].
+  - Replace my ability [ability] proficiency with [proficiency].
+  - Replace my ability [ability] saving throw proficiency with [proficiency].
+  - Replace my ability [ability] saving throw with [proficiency].
+  - Replace my ability [ability] saving throw with proficiency [proficiency].
+  - Replace my ability [ability] with [proficiency].
+  - Replace my ability [ability] with proficiency [proficiency].
+  - Set [ability] ability proficiency to [proficiency].
+  - Set [ability] proficiency to [proficiency].
+  - Set [ability] saving throw ability proficiency to [proficiency].
+  - Set [ability] saving throw proficiency to [proficiency].
+  - Set [ability] saving throw to [proficiency].
+  - Set [ability] saving throw to proficiency [proficiency].
+  - Set [ability] to [proficiency].
+  - Set [ability] to proficiency [proficiency].
+  - Set ability [ability] proficiency to [proficiency].
+  - Set ability [ability] saving throw proficiency to [proficiency].
+  - Set ability [ability] saving throw to [proficiency].
+  - Set ability [ability] saving throw to proficiency [proficiency].
+  - Set ability [ability] to [proficiency].
+  - Set ability [ability] to proficiency [proficiency].
+  - Set my [ability] ability proficiency to [proficiency].
+  - Set my [ability] proficiency to [proficiency].
+  - Set my [ability] saving throw ability proficiency to [proficiency].
+  - Set my [ability] saving throw proficiency to [proficiency].
+  - Set my [ability] saving throw to [proficiency].
+  - Set my [ability] saving throw to proficiency [proficiency].
+  - Set my [ability] to [proficiency].
+  - Set my [ability] to proficiency [proficiency].
+  - Set my ability [ability] proficiency to [proficiency].
+  - Set my ability [ability] saving throw proficiency to [proficiency].
+  - Set my ability [ability] saving throw to [proficiency].
+  - Set my ability [ability] saving throw to proficiency [proficiency].
+  - Set my ability [ability] to [proficiency].
+  - Set my ability [ability] to proficiency [proficiency].
+  - Update [ability] ability proficiency to [proficiency].
+  - Update [ability] proficiency to [proficiency].
+  - Update [ability] saving throw ability proficiency to [proficiency].
+  - Update [ability] saving throw proficiency to [proficiency].
+  - Update [ability] saving throw to [proficiency].
+  - Update [ability] saving throw to proficiency [proficiency].
+  - Update [ability] to [proficiency].
+  - Update [ability] to proficiency [proficiency].
+  - Update ability [ability] proficiency to [proficiency].
+  - Update ability [ability] saving throw proficiency to [proficiency].
+  - Update ability [ability] saving throw to [proficiency].
+  - Update ability [ability] saving throw to proficiency [proficiency].
+  - Update ability [ability] to [proficiency].
+  - Update ability [ability] to proficiency [proficiency].
+  - Update my [ability] ability proficiency to [proficiency].
+  - Update my [ability] proficiency to [proficiency].
+  - Update my [ability] saving throw ability proficiency to [proficiency].
+  - Update my [ability] saving throw proficiency to [proficiency].
+  - Update my [ability] saving throw to [proficiency].
+  - Update my [ability] saving throw to proficiency [proficiency].
+  - Update my [ability] to [proficiency].
+  - Update my [ability] to proficiency [proficiency].
+  - Update my ability [ability] proficiency to [proficiency].
+  - Update my ability [ability] saving throw proficiency to [proficiency].
+  - Update my ability [ability] saving throw to [proficiency].
+  - Update my ability [ability] saving throw to proficiency [proficiency].
+  - Update my ability [ability] to [proficiency].
+  - Update my ability [ability] to proficiency [proficiency].

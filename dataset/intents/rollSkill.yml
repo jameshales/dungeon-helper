@@ -1,0 +1,106 @@
+type: intent
+name: rollSkill
+slots:
+  - name: skill
+    entity: skill
+  - name: condition
+    entity: condition
+utterances:
+  - "[skill] check under [condition]."
+  - "[skill] check with [condition]."
+  - "[skill] check."
+  - "[skill] skill check under [condition]."
+  - "[skill] skill check with [condition]."
+  - "[skill](Cha)"
+  - "[skill](Charisma)"
+  - "[skill](Con)"
+  - "[skill](Constitution)"
+  - "[skill](Dex)"
+  - "[skill](Dexterity)"
+  - "[skill](Int)"
+  - "[skill](Intelligence)"
+  - "[skill](Str)"
+  - "[skill](Strength)"
+  - "[skill](Wis)"
+  - "[skill](Wisdom)"
+  - "[skill]."
+  - Can you do a [skill] check?
+  - Can you please throw me [skill] please?
+  - Can you please throw me [skill] with [condition] please?
+  - Can you please throw me [skill] with [condition]?
+  - Can you please throw me [skill]?
+  - Can you roll [skill] for me?
+  - Can you roll [skill]?
+  - Can you throw me [skill] please?
+  - Can you throw me [skill] with [condition] please?
+  - Can you throw me [skill] with [condition]?
+  - Can you throw me [skill]?
+  - Check [skill] with [condition].
+  - Check [skill].
+  - Check a skill.
+  - Check an skill.
+  - Check skill.
+  - Could you throw [skill] for me please?
+  - Could you throw [skill] with [condition] for me please?
+  - Do a [skill] check with [condition].
+  - Do a [skill] check.
+  - Do a [skill] roll.
+  - Do a [skill] skill check.
+  - Do a check.
+  - Do a skill check for [skill].
+  - Do a skill check with [condition] for [skill].
+  - Do a skill check.
+  - Do an skill check.
+  - I need you to throw [skill] with [condition].
+  - I need you to throw [skill].
+  - I need you to throw me [skill] with [condition].
+  - I need you to throw me [skill].
+  - Perform a [skill] check under [condition].
+  - Perform a [skill] check.
+  - Perform a [skill] skill check with [condition].
+  - Perform a skill check.
+  - Perform an skill check with [skill].
+  - Perform an skill roll.
+  - Please can you throw me [skill] with [condition]?
+  - Please can you throw me [skill]?
+  - Please do a [skill] check.
+  - Please throw a [skill] skill check.
+  - Please throw me [skill] with [condition].
+  - Please throw me [skill].
+  - Roll [skill] with [condition].
+  - Roll [skill].
+  - Roll a [skill] check.
+  - Roll a [skill] skill check under [condition].
+  - Roll a skill check for [skill].
+  - Roll a skill.
+  - Roll an skill check for [skill].
+  - Roll an skill check.
+  - Roll an skill.
+  - Roll for [skill] with [condition].
+  - Roll for [skill].
+  - Roll for a skill.
+  - Roll for an skill.
+  - Roll skill.
+  - Skill check [skill] under [condition].
+  - Skill check [skill].
+  - Skill check.
+  - Throw [skill].
+  - Throw a [skill] check.
+  - Throw a [skill] skill check.
+  - Throw a skill check.
+  - Throw a skill.
+  - Throw an skill check.
+  - Throw for [skill] under [condition].
+  - Throw for [skill].
+  - Throw for a skill.
+  - Throw for an skill.
+  - Time to roll a [skill] check.
+  - Time to roll a [skill] skill check.
+  - Time to roll for [skill].
+  - Time to roll with [skill].
+  - Will you roll [skill] for me?
+  - Will you roll [skill]?
+  - Would you kindly throw me [skill] with [condition]?
+  - Would you kindly throw me [skill]?
+  - Would you throw me [skill] with [condition]?
+  - Would you throw me [skill]?

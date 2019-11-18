@@ -1,0 +1,22 @@
+type: intent
+name: setChannelDiceOnlyTrue
+utterances:
+  - Activate dice only mode.
+  - Dice only.
+  - Enable dice only mode.
+  - Make dice only mode on.
+  - Make dice only mode true.
+  - Make dice only mode yes.
+  - Make this channel dice only.
+  - Set dice only mode to on.
+  - Set dice only mode to true.
+  - Set dice only mode to yes.
+  - Set dice only to on.
+  - Set dice only to true.
+  - Set dice only to yes.
+  - Set this channel to dice only mode.
+  - Set this channel to dice only.
+  - Turn on dice only mode.
+  - Update dice only to on.
+  - Update dice only to true.
+  - Update dice only to yes.

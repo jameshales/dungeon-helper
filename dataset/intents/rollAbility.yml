@@ -1,0 +1,93 @@
+type: intent
+name: rollAbility
+slots:
+  - name: ability
+    entity: ability
+  - name: condition
+    entity: condition
+utterances:
+  - "[ability] ability check under [condition]."
+  - "[ability] ability check with [condition]."
+  - "[ability] check under [condition]."
+  - "[ability] check with [condition]."
+  - "[ability] check."
+  - "[ability] under [condition]"
+  - "[ability] with [condition]"
+  - "[ability]"
+  - "[ability]."
+  - Ability check [ability] under [condition].
+  - Ability check [ability].
+  - Ability check.
+  - Can you do a [ability] check?
+  - Can you please throw me [ability] please?
+  - Can you please throw me [ability] with [condition] please?
+  - Can you please throw me [ability] with [condition]?
+  - Can you please throw me [ability]?
+  - Can you roll [ability] for me?
+  - Can you roll [ability]?
+  - Can you throw me [ability] please?
+  - Can you throw me [ability] with [condition] please?
+  - Can you throw me [ability] with [condition]?
+  - Can you throw me [ability]?
+  - Check [ability] with [condition].
+  - Check [ability].
+  - Check ability.
+  - Check an ability.
+  - Could you throw [ability] for me please?
+  - Could you throw [ability] with [condition] for me please?
+  - Do a [ability] ability check.
+  - Do a [ability] check with [condition].
+  - Do a [ability] check.
+  - Do a [ability] roll.
+  - Do a check.
+  - Do an ability check for [ability].
+  - Do an ability check with [condition] for [ability].
+  - Do an ability check.
+  - I need you to throw [ability] with [condition].
+  - I need you to throw [ability].
+  - I need you to throw me [ability] with [condition].
+  - I need you to throw me [ability].
+  - Perform a [ability] ability check with [condition].
+  - Perform a [ability] check under [condition].
+  - Perform a [ability] check.
+  - Perform an ability check with [ability].
+  - Perform an ability check.
+  - Perform an ability roll.
+  - Please can you throw me [ability] with [condition]?
+  - Please can you throw me [ability]?
+  - Please do a [ability] check.
+  - Please throw a [ability] ability check.
+  - Please throw me [ability] with [condition].
+  - Please throw me [ability].
+  - Roll [ability] with [condition].
+  - Roll [ability].
+  - Roll a [ability] ability check under [condition].
+  - Roll a [ability] check.
+  - Roll ability.
+  - Roll an ability check for [ability].
+  - Roll an ability check.
+  - Roll an ability.
+  - Roll for [ability] with [condition].
+  - Roll for [ability].
+  - Roll for an ability.
+  - Skill check [ability] under [condition].
+  - Skill check [ability].
+  - Skill check.
+  - Throw [ability].
+  - Throw a [ability] ability check.
+  - Throw a [ability] check.
+  - Throw an ability check.
+  - Throw an ability.
+  - Throw for [ability] under [condition].
+  - Throw for [ability].
+  - Throw for an ability.
+  - Time to roll a [ability] ability check.
+  - Time to roll a [ability] check.
+  - Time to roll for [ability].
+  - Time to roll with [ability].
+  - Will you roll [ability] for me?
+  - Will you roll [ability]?
+  - Would you kindly throw me [ability] with [condition]?
+  - Would you kindly throw me [ability]?
+  - Would you throw me [ability] with [condition]?
+  - Would you throw me [ability]?

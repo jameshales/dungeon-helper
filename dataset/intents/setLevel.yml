@@ -1,0 +1,18 @@
+type: intent
+name: setLevel
+slots:
+  - name: level
+    entity: snips/number
+utterances:
+  - Change level to [level].
+  - Change my level to [level].
+  - Decrease my level to [level].
+  - Increase my level to [level].
+  - Make level [level].
+  - Make my level to [level].
+  - Replace level with [level].
+  - Replace my level with [level].
+  - Set level to [level].
+  - Set my level to [level].
+  - Update level to [level].
+  - Update my level to [level].

@@ -1,0 +1,19 @@
+type: intent
+name: setJackOfAllTrades
+utterances:
+  - Add jack of all trades.
+  - Change jack of all trades to true.
+  - Change jack of all trades to yes.
+  - Enable jack of all trades.
+  - Give jack of all trades.
+  - Give me jack of all trades.
+  - Modify jack of all trades to true.
+  - Modify jack of all trades to yes.
+  - Replace jack of all trades with true.
+  - Replace jack of all trades with yes.
+  - Set jack of all trades to true.
+  - Set jack of all trades to yes.
+  - Set jack of all trades.
+  - Turn on jack of all trades.
+  - Update jack of all trades to true.
+  - Update jack of all trades to yes.

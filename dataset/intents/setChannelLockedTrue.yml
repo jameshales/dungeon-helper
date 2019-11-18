@@ -1,0 +1,11 @@
+type: intent
+name: setChannelLockedTrue
+utterances:
+  - Lock all characters in this channel.
+  - Lock all characters.
+  - Lock all.
+  - Lock characters in this channel.
+  - Lock this channel.
+  - Lock.
+  - Set characters in this channel to locked.
+  - Set this channel to locked.

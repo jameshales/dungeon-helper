@@ -1,0 +1,121 @@
+type: entity
+name: die
+automatically_extensible: false
+matching_strictness: 0.8
+values:
+  - - d100
+    - d-100
+    - d100s
+    - d-100s
+    - d100 dice
+    - d-100 dice
+    - d100 die
+    - d-100 die
+    - 100 sided dice
+    - 100 sided die
+    - 100-sided dice
+    - 100-sided die
+    - hundred sided dice
+    - hundred sided die
+    - hundred-sided dice
+    - hundred-sided die
+    - one hundred sided dice
+    - one hundred sided die
+    - one hundred-sided dice
+    - one hundred-sided die
+  - - d20
+    - d-20
+    - d20s
+    - d-20s
+    - d20 dice
+    - d-20 dice
+    - d20 die
+    - d-20 die
+    - 20 sided dice
+    - 20 sided die
+    - 20-sided dice
+    - 20-sided die
+    - twenty sided dice
+    - twenty sided die
+    - twenty-sided dice
+    - twenty-sided die
+  - - d12
+    - d-12
+    - d12s
+    - d-12s
+    - d12 dice
+    - d-12 dice
+    - d12 die
+    - d-12 die
+    - 12-sided die
+    - 12 sided die
+    - twelve-sided die
+    - twelve sided die
+    - 12-sided dice
+    - 12 sided dice
+    - twelve-sided dice
+    - twelve sided dice
+  - - d10
+    - d-10
+    - d10s
+    - d-10s
+    - d10 dice
+    - d-10 dice
+    - d10 die
+    - d-10 die
+    - 10-sided die
+    - 10 sided die
+    - ten-sided die
+    - ten sided die
+    - 10-sided dice
+    - 10 sided dice
+    - ten-sided dice
+    - ten sided dice
+  - - d8
+    - d-8
+    - d8s
+    - d-8s
+    - d8 dice
+    - d-8 dice
+    - d8 die
+    - d-8 die
+    - 8-sided die
+    - 8 sided die
+    - eight-sided die
+    - eight sided die
+    - 8-sided dice
+    - 8 sided dice
+    - eight-sided dice
+    - eight sided dice
+  - - d6
+    - d-6
+    - d6s
+    - d-6s
+    - d6 dice
+    - d-6 dice
+    - d6 die
+    - d-6 die
+    - 6-sided die
+    - 6 sided die
+    - six-sided die
+    - six sided die
+    - 6-sided dice
+    - 6 sided dice
+    - six-sided dice
+    - six sided dice
+  - - d4
+    - d-4
+    - d4s
+    - d-4s
+    - d4 dice
+    - d-4 dice
+    - d4 die
+    - d-4 die
+    - 4-sided die
+    - 4 sided die
+    - four-sided die
+    - four sided die
+    - 4-sided dice
+    - 4 sided dice
+    - four-sided dice
+    - four sided dice

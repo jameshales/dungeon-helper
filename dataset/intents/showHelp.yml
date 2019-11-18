@@ -1,0 +1,55 @@
+type: intent
+name: showHelp
+utterances:
+  - Assist me.
+  - Display examples.
+  - Give me instructions.
+  - Give me some example commands.
+  - Give me some examples.
+  - Help me do a saving throw.
+  - Help me do a skill check.
+  - Help me do a skill check.
+  - Help me do a skill roll.
+  - Help me do a skill throw.
+  - Help me do an ability check.
+  - Help me do an ability check.
+  - Help me do an ability roll.
+  - Help me do an initiative check.
+  - Help me do an initiative roll.
+  - Help me do an initiative throw.
+  - Help me roll dice.
+  - Help me throw dice.
+  - Help me.
+  - Help me?
+  - Help.
+  - Help?
+  - How can I do a skill check?
+  - How can I do a skill roll?
+  - How can I do a skill throw?
+  - How do I do a saving throw?
+  - How do I do an ability check?
+  - How do I do an ability roll?
+  - How do I do an ability throw?
+  - How do I do an initiative check?
+  - How do I do an initiative roll?
+  - How do I do an initiative throw?
+  - How do I roll a saving throw?
+  - How do I roll dice?
+  - How do I roll for initiative?
+  - How do I throw dice?
+  - How do I throw dice?
+  - How do I throw initiative?
+  - How do I use you?
+  - I don't understand.
+  - I need help using you.
+  - Let me know how to do an ability check.
+  - Show help.
+  - Show me instructions.
+  - Show some example commands.
+  - Show some examples.
+  - Tell me examples for how to use you.
+  - Tell me how to throw dice.
+  - Usage examples.
+  - Usage instructions.
+  - What can you do?
+  - What commands do you support?
