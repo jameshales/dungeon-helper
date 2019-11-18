@@ -4,6 +4,10 @@
 
 ## Usage
 
+See [Command Reference](./COMMANDS.md) for examples of natural language commands supported by Dungeon Helper.
+
+## Installation
+
 ### Requirements
 
 - [Rust](https://www.rust-lang.org/) >= 0.28
