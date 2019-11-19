@@ -3,6 +3,7 @@ name = "dungeon_helper"
 version = "0.1.0"
 authors = ["James Hales <james@jameshales.org>"]
 edition = "2018"
+license = "AGPL-3.0-or-later"
 
 [dependencies]
 env_logger = "0.7.1"
