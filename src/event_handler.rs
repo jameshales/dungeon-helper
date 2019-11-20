@@ -9,7 +9,7 @@ use crate::command::{Command, CommandResult};
 use crate::error::Error;
 use crate::intent_logger::log_intent_result;
 use crate::response::Response;
-use crate::roll::ConditionalRoll;
+use crate::roll::{ConditionalRoll, Critical};
 use log::{error, info};
 use r2d2::{Pool, PooledConnection};
 use r2d2_sqlite::SqliteConnectionManager;
@@ -177,15 +177,20 @@ impl Handler {
                     )
             })
             .and_then(|(character, proficiency)| {
-                attack_roll
-                    .to_attack_roll(character.strength().map(|a| a.modifier), character.dexterity().map(|a| a.modifier), character.proficiency_bonus(), proficiency)
-                    .ok_or_else(|| Response::Warning(ABILITY_NOT_SET_WARNING_TEXT.to_owned()))
-            })
-            .map(|attack_roll_roll| {
+                let strength = character.strength().map(|a| a.modifier);
+                let dexterity = character.dexterity().map(|a| a.modifier);
+                let proficiency_bonus = character.proficiency_bonus();
                 let mut rng = rand::thread_rng();
-                let damage_roll = attack_roll.to_damage_roll();
+                let attack_roll_roll = attack_roll
+                    .to_attack_roll(strength, dexterity, proficiency_bonus, proficiency)
+                    .ok_or_else(|| Response::Warning(ABILITY_NOT_SET_WARNING_TEXT.to_owned()))?;
                 let attack_result = attack_roll_roll.roll(&mut rng);
+                let critical_hit = attack_result.critical() == Some(Critical::Success);
+                let damage_roll = attack_roll.to_damage_roll(strength, dexterity, proficiency_bonus, proficiency, critical_hit).ok_or_else(|| Response::Warning(ABILITY_NOT_SET_WARNING_TEXT.to_owned()))?;
                 let damage_result = damage_roll.roll(&mut rng);
+                Ok((attack_roll_roll, attack_result, damage_roll, damage_result))
+            })
+            .map(|(attack_roll_roll, attack_result, damage_roll, damage_result)| {
                 let attack_name = match attack_roll {
                     AttackRoll::ImprovisedWeapon(ImprovisedWeaponAttackRoll { classification, .. }) => format!("improvised weapon (as {})", classification),
                     AttackRoll::UnarmedStrike(_) => "unarmed strike".to_owned(),

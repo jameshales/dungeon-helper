@@ -100,6 +100,12 @@ pub struct ConditionalRollResult {
     secondary: Option<RollResult>,
 }
 
+impl ConditionalRollResult {
+    pub fn critical(&self) -> Option<Critical> {
+        self.primary.critical
+    }
+}
+
 impl fmt::Display for ConditionalRollResult {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         self.primary
@@ -256,6 +262,14 @@ impl Roll {
             .sample_iter(rng)
             .take(self.rolls)
             .collect()
+    }
+
+    pub fn add_modifier(&self, modifier: i32) -> Roll {
+        Roll::new_unsafe(self.rolls, self.sides, self.modifier + modifier)
+    }
+
+    pub fn multiply_rolls(&self, scalar: usize) -> Roll {
+        Roll::new_unsafe(scalar * self.rolls, self.sides, self.modifier)
     }
 }
 
