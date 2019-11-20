@@ -3,21 +3,21 @@ name: skill
 automatically_extensible: false
 matching_strictness: 0.8
 values:
-  - acrobatics
+  - [acrobatics, acrobatic, acrobat]
   - animal handling
-  - arcana
-  - athletics
-  - deception
+  - [arcana, arcane]
+  - [athletics, athletic, athlete]
+  - [deception, deceive]
   - history
   - insight
-  - intimidation
-  - investigation
+  - [intimidation, intimidate]
+  - [investigation, investigate]
   - medicine
   - nature
-  - perception
-  - performance
-  - persuasion
+  - [perception, perceive]
+  - [performance, perform]
+  - [persuasion, persuade]
   - religion
   - sleight of hand
-  - stealth
-  - survival
+  - [stealth, sneak]
+  - [survival, survive]
