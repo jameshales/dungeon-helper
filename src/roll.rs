@@ -60,7 +60,7 @@ pub enum Critical {
 
 impl fmt::Display for RollResult {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        self.result.fmt(f).and({
+        write!(f, "**{}**", self.result).and({
             if self.dice.len() > 1 || self.modifier != 0 {
                 let mut iter = self.dice.iter().take(MAXIMUM_ROLLS_DISPLAY);
                 iter.next().map_or(Ok(()), |head| {
@@ -636,7 +636,7 @@ mod test {
             modifier: 0,
             critical: None,
         };
-        let expected = "15";
+        let expected = "**15**";
         let actual = result.to_string();
 
         assert_eq!(actual, expected);
@@ -650,7 +650,7 @@ mod test {
             modifier: 0,
             critical: Some(Critical::Success),
         };
-        let expected = "20";
+        let expected = "**20**";
         let actual = result.to_string();
 
         assert_eq!(actual, expected);
@@ -664,7 +664,7 @@ mod test {
             modifier: 0,
             critical: Some(Critical::Failure),
         };
-        let expected = "1";
+        let expected = "**1**";
         let actual = result.to_string();
 
         assert_eq!(actual, expected);
@@ -678,7 +678,7 @@ mod test {
             modifier: 3,
             critical: None,
         };
-        let expected = "12 (9 + __3__)";
+        let expected = "**12** (9 + __3__)";
         let actual = result.to_string();
 
         assert_eq!(actual, expected);
@@ -692,7 +692,7 @@ mod test {
             modifier: 3,
             critical: None,
         };
-        let expected = "18 (8 + 7 + __3__)";
+        let expected = "**18** (8 + 7 + __3__)";
         let actual = result.to_string();
 
         assert_eq!(actual, expected);
@@ -706,7 +706,7 @@ mod test {
             modifier: 4,
             critical: None,
         };
-        let expected = "59 (1 + 2 + 3 + 4 + 5 + 6 + 7 + 8 + 9 + 10 + __4__)";
+        let expected = "**59** (1 + 2 + 3 + 4 + 5 + 6 + 7 + 8 + 9 + 10 + __4__)";
         let actual = result.to_string();
 
         assert_eq!(actual, expected);
@@ -720,7 +720,7 @@ mod test {
             modifier: 4,
             critical: None,
         };
-        let expected = "95 (1 + 2 + 3 + 4 + 5 + 6 + 7 + 8 + 9 + 10 + … + __4__)";
+        let expected = "**95** (1 + 2 + 3 + 4 + 5 + 6 + 7 + 8 + 9 + 10 + … + __4__)";
         let actual = result.to_string();
 
         assert_eq!(actual, expected);
@@ -737,7 +737,7 @@ mod test {
             },
             secondary: None,
         };
-        let expected = "15";
+        let expected = "**15**";
         let actual = result.to_string();
 
         assert_eq!(actual, expected);
@@ -759,7 +759,7 @@ mod test {
                 critical: None,
             }),
         };
-        let expected = "17 / ~~13~~";
+        let expected = "**17** / ~~**13**~~";
         let actual = result.to_string();
 
         assert_eq!(actual, expected);
@@ -776,7 +776,7 @@ mod test {
             },
             secondary: None,
         };
-        let expected = "20 — Critical Success 🤩";
+        let expected = "**20** — Critical Success 🤩";
         let actual = result.to_string();
 
         assert_eq!(actual, expected);
@@ -793,7 +793,7 @@ mod test {
             },
             secondary: None,
         };
-        let expected = "1 — Critical Failure 😰";
+        let expected = "**1** — Critical Failure 😰";
         let actual = result.to_string();
 
         assert_eq!(actual, expected);
@@ -815,7 +815,7 @@ mod test {
                 critical: None,
             }),
         };
-        let expected = "20 / ~~14~~ — Critical Success 🤩";
+        let expected = "**20** / ~~**14**~~ — Critical Success 🤩";
         let actual = result.to_string();
 
         assert_eq!(actual, expected);
@@ -837,7 +837,7 @@ mod test {
                 critical: None,
             }),
         };
-        let expected = "1 / ~~18~~ — Critical Failure 😰";
+        let expected = "**1** / ~~**18**~~ — Critical Failure 😰";
         let actual = result.to_string();
 
         assert_eq!(actual, expected);
