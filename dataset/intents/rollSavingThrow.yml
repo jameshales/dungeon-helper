@@ -6,74 +6,142 @@ slots:
   - name: condition
     entity: condition
 utterances:
+  - "[ability] save under [condition]."
+  - "[ability] save with [condition]."
+  - "[ability] save."
   - "[ability] saving throw under [condition]."
   - "[ability] saving throw with [condition]."
   - "[ability] saving throw."
+  - Can you do a [ability] save?
   - Can you do a [ability] saving throw?
+  - Can you please throw me a [ability] save please?
+  - Can you please throw me a [ability] save with [condition] please?
+  - Can you please throw me a [ability] save with [condition]?
+  - Can you please throw me a [ability] save?
   - Can you please throw me a [ability] saving throw please?
   - Can you please throw me a [ability] saving throw with [condition] please?
   - Can you please throw me a [ability] saving throw with [condition]?
   - Can you please throw me a [ability] saving throw?
+  - Can you roll a [ability] save for me?
+  - Can you roll a [ability] save?
   - Can you roll a [ability] saving throw for me?
   - Can you roll a [ability] saving throw?
+  - Can you throw me [ability] save please?
+  - Can you throw me [ability] save with [condition] please?
+  - Can you throw me [ability] save with [condition]?
+  - Can you throw me [ability] save?
   - Can you throw me [ability] saving throw please?
   - Can you throw me [ability] saving throw with [condition] please?
   - Can you throw me [ability] saving throw with [condition]?
   - Can you throw me [ability] saving throw?
+  - Check [ability] save.
   - Check [ability] saving throw.
+  - Could you throw a [ability] save for me please?
+  - Could you throw a [ability] save with [condition] for me please?
   - Could you throw a [ability] saving throw for me please?
   - Could you throw a [ability] saving throw with [condition] for me please?
+  - Do a [ability] save with [condition].
+  - Do a [ability] save.
   - Do a [ability] saving roll.
   - Do a [ability] saving throw with [condition].
   - Do a [ability] saving throw.
+  - Do a save for [ability].
+  - Do a save with [condition] for [ability].
+  - Do a save.
   - Do a saving throw for [ability].
   - Do a saving throw with [condition] for [ability].
   - Do a saving throw.
+  - I need you to throw a [ability] save with [condition].
+  - I need you to throw a [ability] save.
   - I need you to throw a [ability] saving throw with [condition].
   - I need you to throw a [ability] saving throw.
+  - I need you to throw me a [ability] save with [condition].
+  - I need you to throw me a [ability] save.
   - I need you to throw me a [ability] saving throw with [condition].
   - I need you to throw me a [ability] saving throw.
+  - Perform a [ability] save [condition].
+  - Perform a [ability] save with [condition].
+  - Perform a [ability] save.
   - Perform a [ability] saving throw [condition].
   - Perform a [ability] saving throw with [condition].
   - Perform a [ability] saving throw.
+  - Perform a save.
+  - Perform a save..
   - Perform a saving throw.
   - Perform a saving throw..
+  - Perform an [ability] save with [condition].
   - Perform an [ability] saving throw with [condition].
+  - Perform an save with [ability].
+  - Perform an save.
   - Perform an saving throw with [ability].
   - Perform an saving throw.
+  - Please can you throw me a [ability] save with [condition]?
+  - Please can you throw me a [ability] save?
   - Please can you throw me a [ability] saving throw with [condition]?
   - Please can you throw me a [ability] saving throw?
+  - Please do a [ability] save.
   - Please do a [ability] saving throw.
+  - Please throw a [ability] save.
   - Please throw a [ability] saving throw.
+  - Please throw me a [ability] save with [condition].
+  - Please throw me a [ability] save.
   - Please throw me a [ability] saving throw with [condition].
   - Please throw me a [ability] saving throw.
+  - Roll a [ability] save under [condition].
+  - Roll a [ability] save with [condition].
+  - Roll a [ability] save.
   - Roll a [ability] saving throw under [condition].
   - Roll a [ability] saving throw with [condition].
   - Roll a [ability] saving throw.
+  - Roll a save for [ability].
+  - Roll a save.
   - Roll a saving throw for [ability].
   - Roll a saving throw.
+  - Roll for [ability] save with [condition].
+  - Roll for [ability] save.
   - Roll for [ability] saving throw with [condition].
   - Roll for [ability] saving throw.
+  - Roll for a save.
   - Roll for a saving throw.
+  - Roll for an [ability] save under [condition].
   - Roll for an [ability] saving throw under [condition].
+  - Roll save.
   - Roll saving throw.
+  - Save [ability] under [condition].
+  - Save [ability] with [condition].
+  - Save [ability].
+  - Save for [ability].
+  - Save.
   - Saving throw [ability] under [condition].
   - Saving throw [ability] with [condition].
   - Saving throw [ability].
   - Saving throw a ability.
   - Saving throw for [ability].
   - Saving throw.
+  - Throw a [ability] save.
   - Throw a [ability] saving throw.
+  - Throw a save.
   - Throw a saving throw.
+  - Throw for [ability] save under [condition].
+  - Throw for [ability] save.
   - Throw for [ability] saving throw under [condition].
   - Throw for [ability] saving throw.
+  - Throw for a save.
   - Throw for a saving throw.
+  - Throw for an save.
   - Throw for an saving throw.
+  - Time to roll a [ability] save.
   - Time to roll a [ability] saving throw.
+  - Will you roll [ability] save for me?
   - Will you roll [ability] saving throw for me?
+  - Will you roll a [ability] save for me?
   - Will you roll a [ability] saving throw for me?
   - Will you roll a [ability]?
+  - Would you kindly throw me a [ability] save with [condition]?
+  - Would you kindly throw me a [ability] save?
   - Would you kindly throw me a [ability] saving throw with [condition]?
   - Would you kindly throw me a [ability] saving throw?
+  - Would you throw me a [ability] save with [condition]?
+  - Would you throw me a [ability] save?
   - Would you throw me a [ability] saving throw with [condition]?
   - Would you throw me a [ability] saving throw?
