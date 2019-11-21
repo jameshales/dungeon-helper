@@ -35,9 +35,19 @@ impl AttackRoll {
         critical_hit: bool,
     ) -> Option<ConditionalRoll> {
         match self {
-            AttackRoll::ImprovisedWeapon(roll) => roll.to_damage_roll(strength, dexterity, critical_hit),
-            AttackRoll::UnarmedStrike(roll) => roll.to_damage_roll(strength, proficiency_bonus, critical_hit),
-            AttackRoll::Weapon(roll) => roll.to_damage_roll(strength, dexterity, proficiency_bonus, proficiency, critical_hit),
+            AttackRoll::ImprovisedWeapon(roll) => {
+                roll.to_damage_roll(strength, dexterity, critical_hit)
+            }
+            AttackRoll::UnarmedStrike(roll) => {
+                roll.to_damage_roll(strength, proficiency_bonus, critical_hit)
+            }
+            AttackRoll::Weapon(roll) => roll.to_damage_roll(
+                strength,
+                dexterity,
+                proficiency_bonus,
+                proficiency,
+                critical_hit,
+            ),
         }
     }
 }
@@ -54,16 +64,8 @@ impl ImprovisedWeaponAttackRoll {
         strength: Option<i32>,
         dexterity: Option<i32>,
     ) -> Option<ConditionalRoll> {
-        let ability_modifier = match self.classification {
-            Classification::Melee => strength?,
-            Classification::Ranged => dexterity?,
-        };
-        Some(ConditionalRoll::new_unsafe(
-            1,
-            20,
-            ability_modifier,
-            self.condition,
-        ))
+        let modifier = self.modifier(strength, dexterity)?;
+        Some(ConditionalRoll::new_unsafe(1, 20, modifier, self.condition))
     }
 
     pub fn to_damage_roll(
@@ -73,11 +75,15 @@ impl ImprovisedWeaponAttackRoll {
         critical_hit: bool,
     ) -> Option<ConditionalRoll> {
         let multiplier = critical_hit_multiplier(critical_hit);
-        let modifier = match self.classification {
-            Classification::Melee => strength?,
-            Classification::Ranged => dexterity?,
-        };
+        let modifier = self.modifier(strength, dexterity)?;
         Some(ConditionalRoll::new_unsafe(multiplier, 4, modifier, None))
+    }
+
+    fn modifier(&self, strength: Option<i32>, dexterity: Option<i32>) -> Option<i32> {
+        match self.classification {
+            Classification::Melee => strength,
+            Classification::Ranged => dexterity,
+        }
     }
 }
 
@@ -104,10 +110,15 @@ impl UnarmedStrikeAttackRoll {
         &self,
         strength: Option<i32>,
         proficiency_bonus: Option<i32>,
-        critical_hit: bool
+        critical_hit: bool,
     ) -> Option<ConditionalRoll> {
         let multiplier = critical_hit_multiplier(critical_hit);
-        Some(ConditionalRoll::new_unsafe(multiplier, 4, strength? + proficiency_bonus?, None))
+        Some(ConditionalRoll::new_unsafe(
+            multiplier,
+            4,
+            strength? + proficiency_bonus?,
+            None,
+        ))
     }
 }
 
@@ -145,11 +156,10 @@ impl WeaponAttackRoll {
         critical_hit: bool,
     ) -> Option<ConditionalRoll> {
         let weapon = self.weapon.to_weapon();
-        let roll = if self
-            .classification
-            .iter()
-            .all(|c| *c == weapon.classification || (*c == Classification::Ranged && weapon.thrown))
-        {
+        let used_with_correct_classification = self.classification.iter().all(|c| {
+            *c == weapon.classification || (*c == Classification::Ranged && weapon.thrown)
+        });
+        let roll = if used_with_correct_classification {
             weapon
                 .versatile
                 .filter(|_| self.handedness == Some(Handedness::TwoHanded))
@@ -162,7 +172,7 @@ impl WeaponAttackRoll {
         let modifier = self.modifier(strength, dexterity, proficiency_bonus, proficiency);
         Some(ConditionalRoll::from_roll(
             roll.multiply_rolls(multiplier).add_modifier(modifier?),
-            None
+            None,
         ))
     }
 
