@@ -7,6 +7,11 @@
     - Perform actions for everyone in the channel, e.g. initiative rolls, saving throws.
 - Spell rolls.
 - Custom attacks and spells.
+- Spelling correction for skills, abilities, weapons, etc. ("did you mean ... ?")
+  - Make entities automatically extensible and lower the matching strictness.
+    This gives a slot with the misspelled entity. Use Levenshtein metric to
+    find the closest matching entity, or ask for a clarification if the
+    Levenshtein distance is too great.
 - Parse character sheets from D&D Beyond.
   
   There is a JSON version available by appending `/json` to the character sheet
