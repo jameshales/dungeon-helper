@@ -59,4 +59,4 @@ In a Discord server that the bot has joined:
 - Type `!roll 1d20` to roll one 20-sided die.
 - Type `!roll 2d8 + 4` to roll two 8-sided dice with a modifier of +4 (i.e. adding 4 to the sum of the two dice).
 - Type `!roll 1d20 + 5 with advantage` to roll one 20-sided die with a modifier of +5 with advantage (taking the highest of two rolls).
-- Type `!roll 1d20 - 1 with advantage` to roll one 20-sided die with a modifier of -5 with disadvantage (taking the lowest of two rolls).
+- Type `!roll 1d20 - 1 with advantage` to roll one 20-sided die with a modifier of -1 with disadvantage (taking the lowest of two rolls).
