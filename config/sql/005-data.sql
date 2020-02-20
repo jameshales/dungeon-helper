@@ -24,64 +24,7 @@ INSERT INTO channels (
   true
 );
 
--- Grem
-INSERT INTO characters (
-  channel_id,
-  user_id,
-  level,
-  strength,
-  dexterity,
-  constitution,
-  intelligence,
-  wisdom,
-  charisma,
-  strength_saving_proficiency,
-  constitution_saving_proficiency,
-  animal_handling_proficiency,
-  athletics_proficiency,
-  intimidation_proficiency,
-  nature_proficiency,
-  survival_proficiency
-) VALUES (
-  '644028953719209984',
-  '194800877960167424',
-  5,
-  18,
-  13,
-  16,
-  8,
-  10,
-  12,
-  true,
-  true,
-  'Proficient',
-  'Proficient',
-  'Proficient',
-  'Proficient',
-  'Proficient'
-);
-
-INSERT INTO character_weapon_proficiencies (
-  channel_id,
-  user_id,
-  weapon_category
-) VALUES (
-  '644028953719209984',
-  '194800877960167424',
-  'Simple'
-);
-
-INSERT INTO character_weapon_proficiencies (
-  channel_id,
-  user_id,
-  weapon_category
-) VALUES (
-  '644028953719209984',
-  '194800877960167424',
-  'Martial'
-);
-
--- Roland
+-- Softly Chiming Bells
 INSERT INTO characters (
   channel_id,
   user_id,
@@ -94,22 +37,26 @@ INSERT INTO characters (
   charisma,
   wisdom_saving_proficiency,
   charisma_saving_proficiency,
+  arcana_proficiency,
+  history_proficiency,
   insight_proficiency,
-  intimidation_proficiency,
-  medicine_proficiency,
-  religion_proficiency
+  investigation_proficiency,
+  sleight_of_hand_proficiency,
+  stealth_proficiency
 ) VALUES (
   '644028953719209984',
-  '448364875299946506',
-  5,
+  '194800877960167424',
+  1,
+  8,
   17,
-  9,
   14,
-  11,
-  13,
-  16,
+  10,
+  14,
+  12,
   true,
   true,
+  'Proficient',
+  'Proficient',
   'Proficient',
   'Proficient',
   'Proficient',
@@ -122,21 +69,11 @@ INSERT INTO character_weapon_proficiencies (
   weapon_category
 ) VALUES (
   '644028953719209984',
-  '448364875299946506',
+  '194800877960167424',
   'Simple'
 );
 
-INSERT INTO character_weapon_proficiencies (
-  channel_id,
-  user_id,
-  weapon_category
-) VALUES (
-  '644028953719209984',
-  '448364875299946506',
-  'Martial'
-);
-
--- Laughter
+-- Loe'Guo
 INSERT INTO characters (
   channel_id,
   user_id,
@@ -148,35 +85,29 @@ INSERT INTO characters (
   intelligence,
   wisdom,
   charisma,
+  strength_saving_proficiency,
   dexterity_saving_proficiency,
-  charisma_saving_proficiency,
-  acrobatics_proficiency,
+  athletics_proficiency,
   history_proficiency,
-  insight_proficiency,
-  intimidation_proficiency,
-  nature_proficiency,
-  performance_proficiency,
-  persuasion_proficiency,
-  sleight_of_hand_proficiency
+  medicine_proficiency,
+  religion_proficiency,
+  survival_proficiency
 ) VALUES (
   '644028953719209984',
   '583587280296345601',
-  5,
-  true,
-  10,
-  14,
+  1,
+  false,
+  16,
+  8,
   13,
-  9,
   12,
-  19,
+  16,
+  10,
   true,
   true,
   'Proficient',
   'Proficient',
   'Proficient',
-  'Expert',
-  'Proficient',
-  'Expert',
   'Proficient',
   'Proficient'
 );
@@ -189,36 +120,6 @@ INSERT INTO character_weapon_proficiencies (
   '644028953719209984',
   '583587280296345601',
   'Simple'
-);
-
-INSERT INTO character_weapon_proficiencies (
-  channel_id,
-  user_id,
-  weapon_name
-) VALUES (
-  '644028953719209984',
-  '583587280296345601',
-  'Hand Crossbow'
-);
-
-INSERT INTO character_weapon_proficiencies (
-  channel_id,
-  user_id,
-  weapon_name
-) VALUES (
-  '644028953719209984',
-  '583587280296345601',
-  'Longsword'
-);
-
-INSERT INTO character_weapon_proficiencies (
-  channel_id,
-  user_id,
-  weapon_name
-) VALUES (
-  '644028953719209984',
-  '583587280296345601',
-  'Rapier'
 );
 
 INSERT INTO character_weapon_proficiencies (
@@ -231,7 +132,7 @@ INSERT INTO character_weapon_proficiencies (
   'Shortsword'
 );
 
--- Hardrum
+-- To-cha
 INSERT INTO characters (
   channel_id,
   user_id,
@@ -242,24 +143,26 @@ INSERT INTO characters (
   intelligence,
   wisdom,
   charisma,
-  intelligence_saving_proficiency,
-  wisdom_saving_proficiency,
-  medicine_proficiency,
+  strength_saving_proficiency,
+  dexterity_saving_proficiency,
+  insight_proficiency,
   nature_proficiency,
-  religion_proficiency,
+  perception_proficiency,
+  stealth_proficiency,
   survival_proficiency
 ) VALUES (
   '644028953719209984',
   '638138236874522634',
-  5,
+  1,
+  14,
+  16,
+  12,
+  12,
   14,
   8,
-  15,
-  16,
-  15,
-  10,
   true,
   true,
+  'Proficient',
   'Proficient',
   'Proficient',
   'Proficient',
@@ -269,144 +172,24 @@ INSERT INTO characters (
 INSERT INTO character_weapon_proficiencies (
   channel_id,
   user_id,
-  weapon_name
+  weapon_category
 ) VALUES (
   '644028953719209984',
   '638138236874522634',
-  'Battleaxe'
+  'Simple'
 );
 
 INSERT INTO character_weapon_proficiencies (
   channel_id,
   user_id,
-  weapon_name
+  weapon_category
 ) VALUES (
   '644028953719209984',
   '638138236874522634',
-  'Club'
+  'Martial'
 );
 
-INSERT INTO character_weapon_proficiencies (
-  channel_id,
-  user_id,
-  weapon_name
-) VALUES (
-  '644028953719209984',
-  '638138236874522634',
-  'Dagger'
-);
-
-INSERT INTO character_weapon_proficiencies (
-  channel_id,
-  user_id,
-  weapon_name
-) VALUES (
-  '644028953719209984',
-  '638138236874522634',
-  'Dart'
-);
-
-INSERT INTO character_weapon_proficiencies (
-  channel_id,
-  user_id,
-  weapon_name
-) VALUES (
-  '644028953719209984',
-  '638138236874522634',
-  'Handaxe'
-);
-
-INSERT INTO character_weapon_proficiencies (
-  channel_id,
-  user_id,
-  weapon_name
-) VALUES (
-  '644028953719209984',
-  '638138236874522634',
-  'Javelin'
-);
-
-INSERT INTO character_weapon_proficiencies (
-  channel_id,
-  user_id,
-  weapon_name
-) VALUES (
-  '644028953719209984',
-  '638138236874522634',
-  'Light Hammer'
-);
-
-INSERT INTO character_weapon_proficiencies (
-  channel_id,
-  user_id,
-  weapon_name
-) VALUES (
-  '644028953719209984',
-  '638138236874522634',
-  'Mace'
-);
-
-INSERT INTO character_weapon_proficiencies (
-  channel_id,
-  user_id,
-  weapon_name
-) VALUES (
-  '644028953719209984',
-  '638138236874522634',
-  'Quarterstaff'
-);
-
-INSERT INTO character_weapon_proficiencies (
-  channel_id,
-  user_id,
-  weapon_name
-) VALUES (
-  '644028953719209984',
-  '638138236874522634',
-  'Scimitar'
-);
-
-INSERT INTO character_weapon_proficiencies (
-  channel_id,
-  user_id,
-  weapon_name
-) VALUES (
-  '644028953719209984',
-  '638138236874522634',
-  'Sickle'
-);
-
-INSERT INTO character_weapon_proficiencies (
-  channel_id,
-  user_id,
-  weapon_name
-) VALUES (
-  '644028953719209984',
-  '638138236874522634',
-  'Sling'
-);
-
-INSERT INTO character_weapon_proficiencies (
-  channel_id,
-  user_id,
-  weapon_name
-) VALUES (
-  '644028953719209984',
-  '638138236874522634',
-  'Spear'
-);
-
-INSERT INTO character_weapon_proficiencies (
-  channel_id,
-  user_id,
-  weapon_name
-) VALUES (
-  '644028953719209984',
-  '638138236874522634',
-  'Warhammer'
-);
-
--- Mallile
+-- Connie Yellostone
 INSERT INTO characters (
   channel_id,
   user_id,
@@ -417,24 +200,28 @@ INSERT INTO characters (
   intelligence,
   wisdom,
   charisma,
-  intelligence_saving_proficiency,
   wisdom_saving_proficiency,
-  arcana_proficiency,
-  history_proficiency,
+  charisma_saving_proficiency,
+  deception_proficiency,
+  insight_proficiency,
   investigation_proficiency,
+  nature_proficiency,
+  persuasion_proficiency,
   stealth_proficiency
 ) VALUES (
   '644028953719209984',
   '273957930129424385',
-  5,
-  10,
-  10,
-  13,
-  16,
+  1,
   15,
-  13,
+  8,
+  14,
+  10,
+  16,
+  12,
   true,
   true,
+  'Proficient',
+  'Proficient',
   'Proficient',
   'Proficient',
   'Proficient',
@@ -444,11 +231,60 @@ INSERT INTO characters (
 INSERT INTO character_weapon_proficiencies (
   channel_id,
   user_id,
-  weapon_name
+  weapon_category
 ) VALUES (
   '644028953719209984',
   '273957930129424385',
-  'Light Crossbow'
+  'Simple'
+);
+
+-- Achencheres
+INSERT INTO characters (
+  channel_id,
+  user_id,
+  level,
+  strength,
+  dexterity,
+  constitution,
+  intelligence,
+  wisdom,
+  charisma,
+  strength_saving_proficiency,
+  dexterity_saving_proficiency,
+  athletics_proficiency,
+  insight_proficiency,
+  perception_proficiency,
+  religion_proficiency,
+  stealth_proficiency,
+  survival_proficiency
+) VALUES (
+  '644028953719209984',
+  '266082699599544320',
+  1,
+  12,
+  16,
+  14,
+  8,
+  16,
+  8,
+  true,
+  true,
+  'Proficient',
+  'Proficient',
+  'Proficient',
+  'Proficient',
+  'Proficient',
+  'Proficient'
+);
+
+INSERT INTO character_weapon_proficiencies (
+  channel_id,
+  user_id,
+  weapon_category
+) VALUES (
+  '644028953719209984',
+  '266082699599544320',
+  'Simple'
 );
 
 INSERT INTO character_weapon_proficiencies (
@@ -457,36 +293,6 @@ INSERT INTO character_weapon_proficiencies (
   weapon_name
 ) VALUES (
   '644028953719209984',
-  '273957930129424385',
-  'Dagger'
-);
-
-INSERT INTO character_weapon_proficiencies (
-  channel_id,
-  user_id,
-  weapon_name
-) VALUES (
-  '644028953719209984',
-  '273957930129424385',
-  'Dart'
-);
-
-INSERT INTO character_weapon_proficiencies (
-  channel_id,
-  user_id,
-  weapon_name
-) VALUES (
-  '644028953719209984',
-  '273957930129424385',
-  'Quarterstaff'
-);
-
-INSERT INTO character_weapon_proficiencies (
-  channel_id,
-  user_id,
-  weapon_name
-) VALUES (
-  '644028953719209984',
-  '273957930129424385',
-  'Sling'
+  '266082699599544320',
+  'Shortsword'
 );
