@@ -11,8 +11,5 @@ dungeon-helper.db
 # Snips NLP model
 /model/
 
-# SymSpell spelling frequencies
-/spelling/
-
 # Environment variables
 .env
