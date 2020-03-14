@@ -41,10 +41,13 @@ In a local command-line environment:
     ```
     cargo build --release
     ```
-2.  Set the `DISCORD_TOKEN` environment variable to the bot token noted before.
-3.  Set the `DATABASE_PATH` to the path of a SQLite database, initialised with the SQL schema in `./config/sql/`.
-4.  Set the `MODEL_PATH` to the path of a trained Snips NLU model.
-5.  Set `RUST_LOG=dungeon_helper=info` to enable logging.
+2.  Set environment variables:
+  - `DISCORD_TOKEN` to the bot token noted before.
+  - `DATABASE_PATH` to the path of a SQLite database, initialised with the SQL schema in `./config/sql/`.
+  - `MODEL_PATH` to the path of a trained Snips NLU model.
+  - `DICTIONARY_PATH` to the path of a [SymSpell](https://github.com/reneklacan/symspell) frequency dictionary.
+  - `BIGRAM_DICTIONARY_PATH` to the path of a SymSpell bigram frequency dictionary.
+  - `RUST_LOG=dungeon_helper=info` to enable logging.
 6.  Run the application.
 
     ```

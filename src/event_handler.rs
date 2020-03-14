@@ -18,6 +18,7 @@ use snips_nlu_lib::SnipsNluEngine;
 use snips_nlu_ontology::IntentParserResult;
 use std::convert::identity;
 use std::sync::RwLock;
+use symspell::{SymSpell, UnicodeStringStrategy};
 
 use serenity::{
     model::{
@@ -45,12 +46,14 @@ pub struct Handler {
     pub bot_id: RwLock<Option<String>>,
     pub engine: SnipsNluEngine,
     pub pool: Pool<SqliteConnectionManager>,
+    pub symspell: SymSpell<UnicodeStringStrategy>,
 }
 
 impl Handler {
     fn get_command(
         &self,
         engine: &SnipsNluEngine,
+        symspell: &SymSpell<UnicodeStringStrategy>,
         message: &Message,
         dice_only: bool,
     ) -> Option<Result<CommandResult, command::Error>> {
@@ -61,9 +64,9 @@ impl Handler {
             .and_then(|bot_id| {
                 bot_id
                     .as_ref()
-                    .map(|bot_id| Command::parse(engine, content, Some(&bot_id), dice_only))
+                    .map(|bot_id| Command::parse(engine, symspell, content, Some(&bot_id), dice_only))
             })
-            .unwrap_or_else(|| Command::parse(engine, content, None, dice_only))
+            .unwrap_or_else(|| Command::parse(engine, symspell, content, None, dice_only))
     }
 
     fn get_action(
@@ -79,8 +82,8 @@ impl Handler {
                 .map(|command_result| {
                     let command = match command_result {
                         CommandResult::Shorthand(command) => command,
-                        CommandResult::NaturalLanguage(command, intent_result) => {
-                            self.log_intent_result(&message, &intent_result);
+                        CommandResult::NaturalLanguage(command, intent_result, corrected) => {
+                            self.log_intent_result(&message, &intent_result, corrected.as_deref());
                             command
                         }
                     };
@@ -131,12 +134,12 @@ impl Handler {
         }
     }
 
-    fn log_intent_result(&self, message: &Message, intent_result: &IntentParserResult) {
+    fn log_intent_result(&self, message: &Message, intent_result: &IntentParserResult, corrected: Option<&str>) {
         self.pool
             .get()
             .map_err(|error| error!(target: "dungeon-helper", "Error obtaining database connection. Message ID: {}; Error: {}", message.id, error))
             .and_then(|mut connection| {
-                log_intent_result(&mut connection, message, intent_result)
+                log_intent_result(&mut connection, message, intent_result, corrected)
                     .map_err(|error|
                         error!(target: "dungeon-helper", "Error logging intent result. Message ID: {}; Error: {}", message.id, error)
                     )
@@ -573,17 +576,18 @@ impl EventHandler for Handler {
             let is_private = message.is_private();
             let command_result = self.get_command(
                 &self.engine,
+                &self.symspell,
                 &message,
                 // Private channels are implicitly dice only, no need to @me
                 channel.dice_only || is_private,
             );
             if let Some(command_result) = command_result.as_ref() {
                 match command_result {
-                    Ok(CommandResult::NaturalLanguage(Ok(command), _)) => {
-                        info!(target: "dungeon-helper", "Parsed natural language command successfully. Message ID: {}; Command: {:?}", message.id, command)
+                    Ok(CommandResult::NaturalLanguage(Ok(command), _, corrected)) => {
+                        info!(target: "dungeon-helper", "Parsed natural language command successfully. Message ID: {}; Command: {:?}; Corrected Message: {}", message.id, command, corrected.as_deref().unwrap_or(""))
                     }
-                    Ok(CommandResult::NaturalLanguage(Err(error), _)) => {
-                        info!(target: "dungeon-helper", "Error parsing natural language command. Message ID: {}; Error: {:}", message.id, error)
+                    Ok(CommandResult::NaturalLanguage(Err(error), _, corrected)) => {
+                        info!(target: "dungeon-helper", "Error parsing natural language command. Message ID: {}; Corrected Message: {}; Error: {:}", message.id, corrected.as_deref().unwrap_or(""), error)
                     }
                     Ok(CommandResult::Shorthand(Err(error))) => {
                         info!(target: "dungeon-helper", "Error parsing shorthand command. Message ID: {}; Command: {:?}", message.id, error)

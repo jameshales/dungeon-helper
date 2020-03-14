@@ -11,6 +11,7 @@ use regex::Regex;
 use snips_nlu_lib::SnipsNluEngine;
 use snips_nlu_ontology::IntentParserResult;
 use std::fmt;
+use symspell::{SymSpell, UnicodeStringStrategy};
 
 #[derive(Debug)]
 pub enum Command {
@@ -201,7 +202,7 @@ impl fmt::Display for Error {
 }
 
 type NaturalLanguageCommandResult =
-    Option<Result<(Result<Command, Error>, IntentParserResult), Error>>;
+    Option<Result<(Result<Command, Error>, IntentParserResult, Option<String>), Error>>;
 
 impl Command {
     pub fn is_admin(&self) -> bool {
@@ -229,6 +230,7 @@ impl Command {
 
     pub fn parse(
         engine: &SnipsNluEngine,
+        symspell: &SymSpell<UnicodeStringStrategy>,
         content: &str,
         bot_id: Option<&str>,
         dice_only: bool,
@@ -237,9 +239,9 @@ impl Command {
             .map(CommandResult::Shorthand)
             .map(Ok)
             .or({
-                Command::parse_natural_language(engine, content, bot_id, dice_only).map(|result| {
-                    result.map(|(command, intent_result)| {
-                        CommandResult::NaturalLanguage(command, intent_result)
+                Command::parse_natural_language(engine, symspell, content, bot_id, dice_only).map(|result| {
+                    result.map(|(command, intent_result, corrected)| {
+                        CommandResult::NaturalLanguage(command, intent_result, corrected)
                     })
                 })
             })
@@ -247,14 +249,17 @@ impl Command {
 
     fn parse_natural_language(
         engine: &SnipsNluEngine,
+        symspell: &SymSpell<UnicodeStringStrategy>,
         message: &str,
         bot_id: Option<&str>,
         dice_only: bool,
     ) -> NaturalLanguageCommandResult {
-        Command::extract_at_message(message, bot_id, dice_only).map(|at_message| {
+        Command::extract_at_message(message, bot_id, dice_only).as_ref().map(|at_message| {
+            let corrected = Command::spelling_correction(symspell, at_message);
+            let used = corrected.as_ref().unwrap_or(at_message).as_str();
             engine
-                .parse(at_message.trim(), None, None)
-                .map(|result| (parse_intent_result(&result), result))
+                .parse(used, None, None)
+                .map(|result| (parse_intent_result(&result), result, corrected))
                 .map_err(Error::IntentParserError)
         })
     }
@@ -274,6 +279,12 @@ impl Command {
                 None
             }
         })
+    }
+
+    fn spelling_correction(symspell: &SymSpell<UnicodeStringStrategy>, message: &str) -> Option<String> {
+        let trimmed = message.trim();
+        let suggestions = symspell.lookup_compound(trimmed, 2);
+        suggestions.into_iter().next().map(|s| s.term)
     }
 
     fn parse_shorthand(command: &str) -> Option<Result<Command, Error>> {
@@ -303,5 +314,5 @@ impl Command {
 
 pub enum CommandResult {
     Shorthand(Result<Command, Error>),
-    NaturalLanguage(Result<Command, Error>, IntentParserResult),
+    NaturalLanguage(Result<Command, Error>, IntentParserResult, Option<String>),
 }

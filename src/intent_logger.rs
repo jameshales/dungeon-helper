@@ -9,9 +9,10 @@ pub fn log_intent_result(
     connection: &mut Connection,
     message: &Message,
     intent_result: &IntentParserResult,
+    corrected: Option<&str>,
 ) -> RusqliteResult<()> {
     connection.transaction().and_then(|transaction| {
-        log_message(&transaction, message, intent_result)
+        log_message(&transaction, message, intent_result, corrected)
             .and(
                 intent_result
                     .slots
@@ -31,18 +32,20 @@ fn log_message(
     transaction: &Transaction,
     message: &Message,
     intent_result: &IntentParserResult,
+    corrected: Option<&str>,
 ) -> RusqliteResult<usize> {
     let params: &[&dyn ToSql] = &[
         &message.id.to_string(),
         &message.channel_id.to_string(),
         &message.author.id.to_string(),
         &message.content,
+        &corrected,
         &message.timestamp,
         &intent_result.intent.intent_name,
         &(intent_result.intent.confidence_score as f64),
     ];
     transaction.execute(
-        "INSERT INTO messages (message_id, channel_id, user_id, content, posted, intent_name, confidence_score) VALUES ($1, $2, $3, $4, $5, $6, $7)",
+        "INSERT INTO messages (message_id, channel_id, user_id, content, corrected_content, posted, intent_name, confidence_score) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
         params,
     )
 }

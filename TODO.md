@@ -12,6 +12,18 @@
     This gives a slot with the misspelled entity. Use Levenshtein metric to
     find the closest matching entity, or ask for a clarification if the
     Levenshtein distance is too great.
+  - Add entities to the frequency dictionary, so they won't be corrected to different words.
+  - Add bigrams to the bigram dictionary so that they will be split correctly.
+    - Bigrams, such as "roll dex", "throw dex", "saving throw", etc.
+  - Work out valid frequencies for words and bigrams:
+    - Rate entities and words appearing in intent examples higher.
+    - Rate nouns, adjectives, and verbs lower.
+    - Keep connective words in-place.
+    - Mostly, want to make sure that words in the domain are ranked higher than
+      words outside of the domain (or something like that). Really, for a given
+      word, we only care about the relative rankings for words within a given
+      edit distance. So perhaps do a lookup for each word by edit distance, and
+      give words in the domain a +1 frequency.
 - Parse character sheets from D&D Beyond.
   
   There is a JSON version available by appending `/json` to the character sheet

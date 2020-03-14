@@ -19,6 +19,7 @@ serde_json = "1.0"
 serenity = "0.7.2"
 snips-nlu-lib = { git = "https://github.com/snipsco/snips-nlu-rs", tag = "0.65.3" }
 snips-nlu-ontology = { git = "https://github.com/snipsco/snips-nlu-ontology", tag = "0.67.1" }
+symspell = "0.4.0"
 
 [dependencies.rusqlite]
 version = "0.20"

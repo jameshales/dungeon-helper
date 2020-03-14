@@ -1,4 +1,4 @@
-FROM rust:1.39-buster AS build
+FROM rust:1.42-buster AS build
 
 RUN apt-get update \
  && apt-get install -y clang libclang-dev libsqlite3-dev llvm-dev \

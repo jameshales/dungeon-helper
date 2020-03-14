@@ -3,6 +3,7 @@ CREATE TABLE messages (
   channel_id TEXT NOT NULL,
   user_id TEXT NOT NULL,
   content TEXT NOT NULL,
+  corrected_content TEXT NULL,
   posted TIMESTAMP NOT NULL,
   intent_name TEXT NULL,
   confidence_score REAL NOT NULL
