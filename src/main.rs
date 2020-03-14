@@ -33,8 +33,10 @@ fn main() {
         env::var("DATABASE_PATH").expect("Expected a database path in the environment");
     let token = env::var("DISCORD_TOKEN").expect("Expected a token in the environment");
     let model_path = env::var("MODEL_PATH").expect("Expected a model path in the environment");
-    let dictionary_path = env::var("DICTIONARY_PATH").expect("Expected a dictionary path in the environment");
-    let bigram_dictionary_path = env::var("BIGRAM_DICTIONARY_PATH").expect("Expected a bigram dictionary path in the environment");
+    let dictionary_path =
+        env::var("DICTIONARY_PATH").expect("Expected a dictionary path in the environment");
+    let bigram_dictionary_path = env::var("BIGRAM_DICTIONARY_PATH")
+        .expect("Expected a bigram dictionary path in the environment");
 
     let engine = SnipsNluEngine::from_path(model_path).unwrap();
 
@@ -45,12 +47,7 @@ fn main() {
     let mut symspell: SymSpell<UnicodeStringStrategy> = SymSpell::default();
 
     symspell.load_dictionary(&dictionary_path, 0, 1, " ");
-    symspell.load_bigram_dictionary(
-      &bigram_dictionary_path,
-      0,
-      2,
-      " "
-    );
+    symspell.load_bigram_dictionary(&bigram_dictionary_path, 0, 2, " ");
 
     let handler = Handler {
         bot_id: RwLock::new(None),

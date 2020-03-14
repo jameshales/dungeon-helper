@@ -239,11 +239,13 @@ impl Command {
             .map(CommandResult::Shorthand)
             .map(Ok)
             .or({
-                Command::parse_natural_language(engine, symspell, content, bot_id, dice_only).map(|result| {
-                    result.map(|(command, intent_result, corrected)| {
-                        CommandResult::NaturalLanguage(command, intent_result, corrected)
-                    })
-                })
+                Command::parse_natural_language(engine, symspell, content, bot_id, dice_only).map(
+                    |result| {
+                        result.map(|(command, intent_result, corrected)| {
+                            CommandResult::NaturalLanguage(command, intent_result, corrected)
+                        })
+                    },
+                )
             })
     }
 
@@ -254,14 +256,16 @@ impl Command {
         bot_id: Option<&str>,
         dice_only: bool,
     ) -> NaturalLanguageCommandResult {
-        Command::extract_at_message(message, bot_id, dice_only).as_ref().map(|at_message| {
-            let corrected = Command::spelling_correction(symspell, at_message);
-            let used = corrected.as_ref().unwrap_or(at_message).as_str();
-            engine
-                .parse(used, None, None)
-                .map(|result| (parse_intent_result(&result), result, corrected))
-                .map_err(Error::IntentParserError)
-        })
+        Command::extract_at_message(message, bot_id, dice_only)
+            .as_ref()
+            .map(|at_message| {
+                let corrected = Command::spelling_correction(symspell, at_message);
+                let used = corrected.as_ref().unwrap_or(at_message).as_str();
+                engine
+                    .parse(used, None, None)
+                    .map(|result| (parse_intent_result(&result), result, corrected))
+                    .map_err(Error::IntentParserError)
+            })
     }
 
     fn extract_at_message(message: &str, bot_id: Option<&str>, dice_only: bool) -> Option<String> {
@@ -281,7 +285,10 @@ impl Command {
         })
     }
 
-    fn spelling_correction(symspell: &SymSpell<UnicodeStringStrategy>, message: &str) -> Option<String> {
+    fn spelling_correction(
+        symspell: &SymSpell<UnicodeStringStrategy>,
+        message: &str,
+    ) -> Option<String> {
         let trimmed = message.trim();
         let suggestions = symspell.lookup_compound(trimmed, 2);
         suggestions.into_iter().next().map(|s| s.term)

@@ -1,6 +1,7 @@
 use rand::distributions::{Distribution, Uniform};
 use rand::Rng;
 use regex::Regex;
+use std::cmp::Ordering;
 use std::error;
 use std::fmt;
 
@@ -72,12 +73,10 @@ impl fmt::Display for RollResult {
                     } else {
                         Ok(())
                     })
-                    .and(if self.modifier > 0 {
-                        write!(f, " + __{}__)", self.modifier)
-                    } else if self.modifier < 0 {
-                        write!(f, " - __{}__)", -self.modifier)
-                    } else {
-                        write!(f, ")")
+                    .and(match self.modifier.cmp(&0) {
+                        Ordering::Greater => write!(f, " + __{}__)", self.modifier),
+                        Ordering::Less => write!(f, " - __{}__)", -self.modifier),
+                        Ordering::Equal => write!(f, ")"),
                     })
                 })
             } else {
@@ -275,12 +274,10 @@ impl Roll {
 
 impl fmt::Display for Roll {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}d{}", self.rolls, self.sides).and(if self.modifier > 0 {
-            write!(f, " + {}", self.modifier)
-        } else if self.modifier < 0 {
-            write!(f, " - {}", self.modifier.abs())
-        } else {
-            Ok(())
+        write!(f, "{}d{}", self.rolls, self.sides).and(match self.modifier.cmp(&0) {
+            Ordering::Greater => write!(f, " + {}", self.modifier),
+            Ordering::Less => write!(f, " - {}", self.modifier.abs()),
+            Ordering::Equal => Ok(()),
         })
     }
 }

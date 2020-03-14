@@ -62,9 +62,9 @@ impl Handler {
             .try_read()
             .ok()
             .and_then(|bot_id| {
-                bot_id
-                    .as_ref()
-                    .map(|bot_id| Command::parse(engine, symspell, content, Some(&bot_id), dice_only))
+                bot_id.as_ref().map(|bot_id| {
+                    Command::parse(engine, symspell, content, Some(&bot_id), dice_only)
+                })
             })
             .unwrap_or_else(|| Command::parse(engine, symspell, content, None, dice_only))
     }
@@ -134,7 +134,12 @@ impl Handler {
         }
     }
 
-    fn log_intent_result(&self, message: &Message, intent_result: &IntentParserResult, corrected: Option<&str>) {
+    fn log_intent_result(
+        &self,
+        message: &Message,
+        intent_result: &IntentParserResult,
+        corrected: Option<&str>,
+    ) {
         self.pool
             .get()
             .map_err(|error| error!(target: "dungeon-helper", "Error obtaining database connection. Message ID: {}; Error: {}", message.id, error))
