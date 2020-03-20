@@ -138,48 +138,6 @@ Character attributes are tied to a specific Discord channel and user, so a user 
 - Show me my skill proficiencies
 - What are my weapon proficiencies?
 
-### Setting Attributes
-
-- Set strength to 15
-- Update dexterity score to 18
-- Make stealth proficient
-- Set athletics to expert
-- Change persuasion to normal
-- Set my level to 5
-- Give me jack of all trades
-- Make strength saving throw proficient
-- Make wisdom saving throw normal
-- Set club to proficient
-- Update simple weapons to proficient
-
 ## Direct Messages
 
 Dungeon Helper will respond to direct messages to roll dice, but won't perform character-related rolls, such as attribute or skill checks.
-
-## Administrator Commands
-
-The administrators of a Discord server may set per-channel settings to control the Dungeon Helper.
-
-### Enable or Disable a Channel
-
-After Dungeon Helper has been invited to a Discord server, it receives messages from all of the text channels in the server, but only responds to messages from channels that Dungeon Helper has been enabled in, or messages from server administrators.
-By default Dungeon Helper is not enabled in any channel.
-
-- Enable channel
-- Disable channel
-
-### Dice Only Mode
-
-By default Dungeon Helper only responds to messages that begin with an tag for the Dungeon Helper user, e.g. "@Dungeon Helper Roll a d20".
-To reduce typing one may enable dice only mode in the channel, in which case Dungeon Helper will respond to all messages, without requiring a tag.
-It's recommended that this be enabled in a text channel separate to the general chat channel.
-
-- Enable dice only mode
-- Disable dice only mode
-
-### Lock Character Attributes
-
-Once character attributes have been set in a channel, an administrator may lock the channel to prevent further changes to the attributes.
-
-- Lock this channel
-- Unlock this channel

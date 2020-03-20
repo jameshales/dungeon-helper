@@ -1,4 +1,4 @@
-use crate::character::{CharacterAttribute, CharacterAttributeUpdate};
+use crate::character::CharacterAttribute;
 use crate::character_roll::CharacterRoll;
 use crate::error;
 use crate::intent_parser::parse_intent_result;
@@ -20,10 +20,6 @@ pub enum Command {
     Help,
     HelpShorthand,
     Roll(crate::roll::ConditionalRoll),
-    Set(CharacterAttributeUpdate),
-    SetChannelEnabled(bool),
-    SetChannelLocked(bool),
-    SetChannelDiceOnly(bool),
     Show(CharacterAttribute),
     ShowAbilities,
     ShowSkills,
@@ -37,10 +33,6 @@ impl Command {
             Command::CharacterRoll(_) => "perform a character roll",
             Command::Help | Command::HelpShorthand => "ask for help",
             Command::Roll(_) => "perform a roll",
-            Command::Set(_) => "set a character attribute",
-            Command::SetChannelEnabled(_)
-            | Command::SetChannelLocked(_)
-            | Command::SetChannelDiceOnly(_) => "set a channel attribute",
             Command::Show(_) => "show a character attribute",
             Command::ShowAbilities => "show a character's abilities",
             Command::ShowSkills => "show a character's skills",
@@ -67,16 +59,6 @@ pub enum Error {
     RollDiceInvalid(RollError, usize, i32),
     RollSavingThrowMissingAbility,
     RollSkillMissingSkill,
-    SetAbilityMissingAbility,
-    SetAbilityMissingScore,
-    SetLevelMissingLevel,
-    SetSavingThrowMissingAbility,
-    SetSavingThrowMissingProficiency,
-    SetSkillMissingSkill,
-    SetSkillMissingProficiency,
-    SetWeaponProficiencyAmbiguousWeapon(AmbiguousWeaponName),
-    SetWeaponProficiencyMissingProficiency,
-    SetWeaponProficiencyMissingWeaponAndCategory,
     ShowAbilityMissingAbility,
     ShowPassiveAbilityMissingAbility,
     ShowPassiveSkillMissingSkill,
@@ -143,36 +125,6 @@ impl fmt::Display for Error {
             Error::RollSkillMissingSkill => {
                 write!(f, "It looks like you're trying to roll a skill check, but I'm not sure what skill you want. Try \"Roll stealth\", \"Athletics check\", etc.")
             }
-            Error::SetAbilityMissingAbility => {
-                write!(f, "It looks like you're trying to set an ability score, but I'm not sure what ability you want to set. Try \"Set strength as 12\", \"Change dexterity to 14\", etc.")
-            }
-            Error::SetAbilityMissingScore => {
-                write!(f, "It looks like you're trying to set an ability score, but I'm not sure what score you want to set it to. Try \"Set strength as 12\", \"Change dexterity to 14\", etc.")
-            }
-            Error::SetLevelMissingLevel => {
-                write!(f, "It looks like you're trying to set your level, but I'm not sure what level you want to set it to. Try \"Set level as 3\", \"Change level to 5\", etc.")
-            }
-            Error::SetSavingThrowMissingAbility => {
-                write!(f, "It looks like you're trying to set a saving throw proficiency, but I'm not sure what saving throw you want to set. Try \"Set strength saving throw to proficient\", \"Change dexterity saving throw to normal\", etc.")
-            }
-            Error::SetSavingThrowMissingProficiency => {
-                write!(f, "It looks like you're trying to set a saving throw proficiency, but I'm not sure what proficiency you want to set it to. Try \"Set strength saving throw to proficient\", \"Change dexterity saving throw to normal\", etc.")
-            }
-            Error::SetSkillMissingSkill => {
-                write!(f, "It looks like you're trying to set a skill proficiency, but I'm not sure what skill you want to set. Try \"Set athletics to proficient\", \"Change stealth to expert\", \"Update nature to normal\" etc.")
-            }
-            Error::SetSkillMissingProficiency => {
-                write!(f, "It looks like you're trying to set a skill proficiency, but I'm not sure what proficiency you want to set it to. Try \"Set athletics to proficient\", \"Change stealth to expert\", \"Update nature to normal\" etc.")
-            }
-            Error::SetWeaponProficiencyAmbiguousWeapon(ambiguous_weapon) => {
-                write!(f, "It looks like you're trying to set a weapon proficiency for {}, but that is an ambiguous weapon name. {}", ambiguous_weapon, ambiguous_weapon.message())
-            }
-            Error::SetWeaponProficiencyMissingProficiency => {
-                write!(f, "It looks like you're trying to set a weapon proficiency, but I'm not sure what proficiency you want to set it to. Try \"Set club to proficient\", \"Change martial weapons to normal\", etc.")
-            }
-            Error::SetWeaponProficiencyMissingWeaponAndCategory => {
-                write!(f, "It looks like you're trying to set a weapon proficiency, but I'm not sure what weapon or category of weapons you want to set. Try \"Set club to proficient\", \"Change martial weapons to normal\", etc.")
-            }
             Error::ShowAbilityMissingAbility => {
                 write!(f, "It looks like you're trying to view an ability score, but I'm not sure what ability you want. Try \"Show strength\", \"Display dexterity\", etc.")
             }
@@ -205,22 +157,6 @@ type NaturalLanguageCommandResult =
     Option<Result<(Result<Command, Error>, IntentParserResult, Option<String>), Error>>;
 
 impl Command {
-    pub fn is_admin(&self) -> bool {
-        match self {
-            Command::SetChannelDiceOnly(_)
-            | Command::SetChannelEnabled(_)
-            | Command::SetChannelLocked(_) => true,
-            _ => false,
-        }
-    }
-
-    pub fn is_editing(&self) -> bool {
-        match self {
-            Command::Set(_) => true,
-            _ => false,
-        }
-    }
-
     pub fn is_private(&self) -> bool {
         match self {
             Command::Help | Command::HelpShorthand | Command::Roll(_) => true,

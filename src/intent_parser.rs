@@ -1,13 +1,11 @@
 use crate::attack_roll::{
     AttackRoll, Handedness, ImprovisedWeaponAttackRoll, UnarmedStrikeAttackRoll, WeaponAttackRoll,
 };
-use crate::character::{
-    AbilityName, CharacterAttribute, CharacterAttributeUpdate, Proficiency, SkillName,
-};
+use crate::character::{AbilityName, CharacterAttribute, SkillName};
 use crate::character_roll::{CharacterRoll, Check};
 use crate::command::{Command, Error};
 use crate::roll::{Condition, ConditionalRoll};
-use crate::weapon::{AmbiguousWeaponName, Category, Classification, WeaponName};
+use crate::weapon::{AmbiguousWeaponName, Classification, WeaponName};
 use snips_nlu_ontology::{IntentParserResult, Slot, SlotValue};
 use std::convert::TryFrom;
 
@@ -25,23 +23,6 @@ pub fn parse_intent_result(result: &IntentParserResult) -> Result<Command, Error
             "rollSavingThrow" => parse_roll_saving_throw(&slots),
             "rollSkill" => parse_roll_skill(&slots),
             "rollUnarmedStrike" => Ok(parse_roll_unarmed_strike(&slots)),
-            "setAbility" => parse_set_ability(&slots),
-            "setChannelDiceOnlyFalse" => Ok(Command::SetChannelDiceOnly(false)),
-            "setChannelDiceOnlyTrue" => Ok(Command::SetChannelDiceOnly(true)),
-            "setChannelEnabledFalse" => Ok(Command::SetChannelEnabled(false)),
-            "setChannelEnabledTrue" => Ok(Command::SetChannelEnabled(true)),
-            "setChannelLockedFalse" => Ok(Command::SetChannelLocked(false)),
-            "setChannelLockedTrue" => Ok(Command::SetChannelLocked(true)),
-            "setJackOfAllTrades" => Ok(Command::Set(CharacterAttributeUpdate::JackOfAllTrades(
-                true,
-            ))),
-            "setLevel" => parse_set_level(&slots),
-            "setNotJackOfAllTrades" => Ok(Command::Set(CharacterAttributeUpdate::JackOfAllTrades(
-                false,
-            ))),
-            "setSavingThrow" => parse_set_saving_throw(&slots),
-            "setSkill" => parse_set_skill(&slots),
-            "setWeaponProficiency" => parse_set_weapon_proficiency(&slots),
             "showAbilities" => Ok(Command::ShowAbilities),
             "showAbility" => parse_show_ability(&slots),
             "showHelp" => Ok(Command::Help),
@@ -167,89 +148,6 @@ fn parse_roll_unarmed_strike(slots: &[Slot]) -> Command {
     Command::AttackRoll(roll)
 }
 
-fn parse_set_ability(slots: &[Slot]) -> Result<Command, Error> {
-    let ability = extract_ability_slot(slots);
-    let score = extract_i32_slot_value(slots, "score");
-    ability
-        .ok_or(Error::SetAbilityMissingAbility)
-        .and_then(|ability| {
-            score
-                .ok_or(Error::SetAbilityMissingScore)
-                .map(|score| Command::Set(CharacterAttributeUpdate::Ability(ability, score)))
-        })
-}
-
-fn parse_set_level(slots: &[Slot]) -> Result<Command, Error> {
-    let level = extract_i32_slot_value(slots, "level");
-    level
-        .ok_or(Error::SetLevelMissingLevel)
-        .map(|level| Command::Set(CharacterAttributeUpdate::Level(level)))
-}
-
-fn parse_set_saving_throw(slots: &[Slot]) -> Result<Command, Error> {
-    let ability = extract_ability_slot(slots);
-    let proficiency = extract_proficiency_slot(slots);
-    ability
-        .ok_or(Error::SetSavingThrowMissingAbility)
-        .and_then(|ability| {
-            proficiency
-                .ok_or(Error::SetSavingThrowMissingProficiency)
-                .map(|proficiency| {
-                    Command::Set(CharacterAttributeUpdate::SavingThrowProficiency(
-                        ability,
-                        proficiency != Proficiency::Normal,
-                    ))
-                })
-        })
-}
-
-fn parse_set_skill(slots: &[Slot]) -> Result<Command, Error> {
-    let proficiency = extract_proficiency_slot(slots);
-    let skill = extract_skill_slot(slots);
-    skill.ok_or(Error::SetSkillMissingSkill).and_then(|skill| {
-        proficiency
-            .ok_or(Error::SetSkillMissingProficiency)
-            .map(|proficiency| {
-                Command::Set(CharacterAttributeUpdate::SkillProficiency(
-                    skill,
-                    proficiency,
-                ))
-            })
-    })
-}
-
-fn parse_set_weapon_proficiency(slots: &[Slot]) -> Result<Command, Error> {
-    let ambiguous_weapon = extract_ambiguous_weapon_slot(slots);
-    let proficiency = extract_proficiency_slot(slots);
-    let weapon = extract_weapon_slot(slots);
-    let weapon_proficiency = extract_weapon_proficiency_slot(slots);
-    proficiency
-        .ok_or(Error::SetWeaponProficiencyMissingProficiency)
-        .and_then(|proficiency| {
-            let proficient = proficiency != Proficiency::Normal;
-            weapon
-                .map(|weapon| {
-                    Command::Set(CharacterAttributeUpdate::WeaponProficiency(
-                        weapon, proficient,
-                    ))
-                })
-                .or_else(|| {
-                    weapon_proficiency.map(|weapon_proficiency| {
-                        Command::Set(CharacterAttributeUpdate::WeaponCategoryProficiency(
-                            weapon_proficiency,
-                            proficient,
-                        ))
-                    })
-                })
-                .ok_or_else(|| {
-                    ambiguous_weapon.map_or(
-                        Error::SetWeaponProficiencyMissingWeaponAndCategory,
-                        Error::SetWeaponProficiencyAmbiguousWeapon,
-                    )
-                })
-        })
-}
-
 fn parse_show_ability(slots: &[Slot]) -> Result<Command, Error> {
     let ability = extract_ability_slot(slots);
     ability
@@ -332,10 +230,6 @@ fn extract_handedness_slot(slots: &[Slot]) -> Option<Handedness> {
         .and_then(|value| Handedness::parse(value.as_ref()))
 }
 
-fn extract_i32_slot_value<'a>(slots: &'a [Slot], slot_name: &str) -> Option<i32> {
-    extract_f64_slot_value(slots, slot_name).and_then(|v| i32::try_from(v as i64).ok())
-}
-
 fn extract_usize_slot_value<'a>(slots: &'a [Slot], slot_name: &str) -> Option<usize> {
     extract_f64_slot_value(slots, slot_name).and_then(|v| usize::try_from(v as i64).ok())
 }
@@ -354,22 +248,12 @@ fn extract_improvised_weapon_slot(slots: &[Slot]) -> bool {
     extract_custom_slot_value(slots, "weapon").map_or(false, |v| v == "improvised weapon")
 }
 
-fn extract_proficiency_slot(slots: &[Slot]) -> Option<Proficiency> {
-    extract_custom_slot_value(slots, "proficiency")
-        .and_then(|value| Proficiency::parse(value.as_ref()))
-}
-
 fn extract_skill_slot(slots: &[Slot]) -> Option<SkillName> {
     extract_custom_slot_value(slots, "skill").and_then(|value| SkillName::parse(value.as_ref()))
 }
 
 fn extract_weapon_slot(slots: &[Slot]) -> Option<WeaponName> {
     extract_custom_slot_value(slots, "weapon").and_then(|value| WeaponName::parse(value.as_ref()))
-}
-
-fn extract_weapon_proficiency_slot(slots: &[Slot]) -> Option<Category> {
-    extract_custom_slot_value(slots, "weapon_proficiency")
-        .and_then(|value| Category::parse(value.as_ref()))
 }
 
 fn find_slot_by_name<'a>(slots: &'a [Slot], slot_name: &str) -> Option<&'a Slot> {

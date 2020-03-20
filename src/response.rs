@@ -7,7 +7,6 @@ pub enum Response {
     Error(Error),
     Help(String),
     Show(String),
-    Update(String),
     Warning(String),
 }
 
@@ -22,7 +21,6 @@ impl Response {
             ),
             Response::Help(message) => format!("🎱 <@{}> {}", author_id, message),
             Response::Show(message) => format!("<@{}> {}", author_id, message),
-            Response::Update(message) => format!("💾 <@{}> {}", author_id, message),
             Response::Warning(message) => format!("⚠️ <@{}> {}", author_id, message),
         }
     }

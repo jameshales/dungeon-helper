@@ -1,7 +1,7 @@
 use crate::weapon::{Category, WeaponName, WeaponProficiency};
 use rusqlite::types::{FromSql, FromSqlError, FromSqlResult, ToSql, ToSqlOutput, ValueRef};
 use rusqlite::Result as RusqliteResult;
-use rusqlite::{Connection, OptionalExtension, Row, Transaction};
+use rusqlite::{Connection, OptionalExtension, Row};
 use serenity::model::id::{ChannelId, UserId};
 use std::error;
 use std::fmt;
@@ -146,38 +146,8 @@ impl Character {
         self.level
     }
 
-    pub fn set_level(
-        transaction: &Transaction,
-        channel_id: ChannelId,
-        user_id: UserId,
-        level: i32,
-    ) -> RusqliteResult<usize> {
-        let params: &[&dyn ToSql] = &[&level, &channel_id.to_string(), &user_id.to_string()];
-        transaction.execute(
-            "UPDATE characters SET level = $1 WHERE channel_id = $2 AND user_id = $3",
-            params,
-        )
-    }
-
     pub fn jack_of_all_trades(&self) -> bool {
         self.jack_of_all_trades
-    }
-
-    pub fn set_jack_of_all_trades(
-        transaction: &Transaction,
-        channel_id: ChannelId,
-        user_id: UserId,
-        jack_of_all_trades: bool,
-    ) -> RusqliteResult<usize> {
-        let params: &[&dyn ToSql] = &[
-            &jack_of_all_trades,
-            &channel_id.to_string(),
-            &user_id.to_string(),
-        ];
-        transaction.execute(
-            "UPDATE characters SET jack_of_all_trades = $1 WHERE channel_id = $2 AND user_id = $3",
-            params,
-        )
     }
 
     pub fn proficiency_bonus(&self) -> Option<i32> {
@@ -232,24 +202,6 @@ impl Character {
         self.ability(name).map(|a| 10 + a.modifier)
     }
 
-    pub fn set_ability(
-        transaction: &Transaction,
-        channel_id: ChannelId,
-        user_id: UserId,
-        name: AbilityName,
-        score: i32,
-    ) -> RusqliteResult<usize> {
-        let params: &[&dyn ToSql] = &[&score, &channel_id.to_string(), &user_id.to_string()];
-        transaction.execute(
-            format!(
-                "UPDATE characters SET {} = $1 WHERE channel_id = $2 AND user_id = $3",
-                name.as_column_name()
-            )
-            .as_ref(),
-            params,
-        )
-    }
-
     // Saving Throws
 
     pub fn saving_throw(&self, name: AbilityName) -> Option<SavingThrow> {
@@ -301,20 +253,6 @@ impl Character {
             modifier: ability?.modifier + bonus,
             proficiency,
         })
-    }
-
-    pub fn set_saving_throw(
-        transaction: &Transaction,
-        channel_id: ChannelId,
-        user_id: UserId,
-        name: AbilityName,
-        proficiency: bool,
-    ) -> RusqliteResult<usize> {
-        let params: &[&dyn ToSql] = &[&proficiency, &channel_id.to_string(), &user_id.to_string()];
-        transaction.execute(
-            format!("UPDATE characters SET {}_saving_proficiency = $1 WHERE channel_id = $2 AND user_id = $3", name.as_column_name()).as_ref(),
-            params
-        )
     }
 
     // Skills
@@ -432,102 +370,6 @@ impl Character {
         })
     }
 
-    pub fn set_skill(
-        transaction: &Transaction,
-        channel_id: ChannelId,
-        user_id: UserId,
-        name: SkillName,
-        proficiency: Proficiency,
-    ) -> RusqliteResult<usize> {
-        let params: &[&dyn ToSql] = &[&proficiency, &channel_id.to_string(), &user_id.to_string()];
-        transaction.execute(
-            format!(
-                "UPDATE characters SET {}_proficiency = $1 WHERE channel_id = $2 AND user_id = $3",
-                name.as_column_name()
-            )
-            .as_ref(),
-            params,
-        )
-    }
-
-    pub fn set_attribute(
-        connection: &mut Connection,
-        channel_id: ChannelId,
-        user_id: UserId,
-        attribute: &CharacterAttributeUpdate,
-    ) -> RusqliteResult<()> {
-        connection.transaction().and_then(|transaction| {
-            Character::create_if_not_exists(&transaction, channel_id, user_id)
-                .and(Character::update_attribute(
-                    &transaction,
-                    channel_id,
-                    user_id,
-                    attribute,
-                ))
-                .and(transaction.commit())
-        })
-    }
-
-    fn create_if_not_exists(
-        transaction: &Transaction,
-        channel_id: ChannelId,
-        user_id: UserId,
-    ) -> RusqliteResult<usize> {
-        let params: &[&dyn ToSql] = &[&channel_id.to_string(), &user_id.to_string()];
-        transaction.execute(
-            "INSERT OR IGNORE INTO characters (channel_id, user_id) VALUES ($1, $2)",
-            params,
-        )
-    }
-
-    pub fn update_attribute(
-        transaction: &Transaction,
-        channel_id: ChannelId,
-        user_id: UserId,
-        attribute: &CharacterAttributeUpdate,
-    ) -> RusqliteResult<usize> {
-        match attribute {
-            CharacterAttributeUpdate::Ability(name, score) => {
-                Character::set_ability(transaction, channel_id, user_id, *name, *score)
-            }
-            CharacterAttributeUpdate::Level(level) => {
-                Character::set_level(transaction, channel_id, user_id, *level)
-            }
-            CharacterAttributeUpdate::JackOfAllTrades(jack_of_all_trades) => {
-                Character::set_jack_of_all_trades(
-                    transaction,
-                    channel_id,
-                    user_id,
-                    *jack_of_all_trades,
-                )
-            }
-            CharacterAttributeUpdate::SavingThrowProficiency(name, proficient) => {
-                Character::set_saving_throw(transaction, channel_id, user_id, *name, *proficient)
-            }
-            CharacterAttributeUpdate::SkillProficiency(name, proficiency) => {
-                Character::set_skill(transaction, channel_id, user_id, *name, *proficiency)
-            }
-            CharacterAttributeUpdate::WeaponProficiency(name, proficient) => {
-                Character::set_weapon_proficiency(
-                    transaction,
-                    channel_id,
-                    user_id,
-                    *name,
-                    *proficient,
-                )
-            }
-            CharacterAttributeUpdate::WeaponCategoryProficiency(category, proficient) => {
-                Character::set_weapon_category_proficiency(
-                    transaction,
-                    channel_id,
-                    user_id,
-                    *category,
-                    *proficient,
-                )
-            }
-        }
-    }
-
     pub fn has_weapon_proficiency(
         connection: &Connection,
         channel_id: ChannelId,
@@ -553,50 +395,6 @@ impl Character {
             )
             .optional()
             .map(|result| result.unwrap_or(false))
-    }
-
-    pub fn set_weapon_proficiency(
-        transaction: &Transaction,
-        channel_id: ChannelId,
-        user_id: UserId,
-        name: WeaponName,
-        proficient: bool,
-    ) -> RusqliteResult<usize> {
-        let params: &[&dyn ToSql] = &[
-            &channel_id.to_string(),
-            &user_id.to_string(),
-            &name.as_str(),
-        ];
-        transaction.execute(
-            if proficient {
-                "INSERT OR IGNORE INTO character_weapon_proficiencies (channel_id, user_id, weapon_name) VALUES ($1, $2, $3)"
-            } else {
-                "DELETE FROM character_weapon_proficiencies WHERE channel_id = $1 AND user_id = $2 AND weapon_name = $3"
-            },
-            params,
-        )
-    }
-
-    pub fn set_weapon_category_proficiency(
-        transaction: &Transaction,
-        channel_id: ChannelId,
-        user_id: UserId,
-        category: Category,
-        proficient: bool,
-    ) -> RusqliteResult<usize> {
-        let params: &[&dyn ToSql] = &[
-            &channel_id.to_string(),
-            &user_id.to_string(),
-            &category.as_str(),
-        ];
-        transaction.execute(
-            if proficient {
-                "INSERT OR IGNORE INTO character_weapon_proficiencies (channel_id, user_id, weapon_category) VALUES ($1, $2, $3)"
-            } else {
-                "DELETE FROM character_weapon_proficiencies WHERE channel_id = $1 AND user_id = $2 AND weapon_category = $3"
-            },
-            params,
-        )
     }
 
     pub fn get_weapon_proficiencies(
@@ -728,17 +526,6 @@ impl AbilityName {
             AbilityName::Charisma => "Charisma",
         }
     }
-
-    pub fn as_column_name(&self) -> &str {
-        match self {
-            AbilityName::Strength => "strength",
-            AbilityName::Dexterity => "dexterity",
-            AbilityName::Constitution => "constitution",
-            AbilityName::Intelligence => "intelligence",
-            AbilityName::Wisdom => "wisdom",
-            AbilityName::Charisma => "charisma",
-        }
-    }
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -810,29 +597,6 @@ impl SkillName {
             SkillName::Survival => "Survival",
         }
     }
-
-    pub fn as_column_name(&self) -> &str {
-        match self {
-            SkillName::Acrobatics => "acrobatics",
-            SkillName::AnimalHandling => "animal_handling",
-            SkillName::Arcana => "arcana",
-            SkillName::Athletics => "athletics",
-            SkillName::Deception => "deception",
-            SkillName::History => "history",
-            SkillName::Insight => "insight",
-            SkillName::Intimidation => "intimidation",
-            SkillName::Investigation => "investigation",
-            SkillName::Medicine => "medicine",
-            SkillName::Nature => "nature",
-            SkillName::Perception => "perception",
-            SkillName::Performance => "performance",
-            SkillName::Persuasion => "persuasion",
-            SkillName::Religion => "religion",
-            SkillName::SleightOfHand => "sleight_of_hand",
-            SkillName::Stealth => "stealth",
-            SkillName::Survival => "survival",
-        }
-    }
 }
 
 #[derive(Debug, Eq, PartialEq)]
@@ -845,52 +609,4 @@ pub enum CharacterAttribute {
     PassiveSkill(SkillName),
     SavingThrow(AbilityName),
     Skill(SkillName),
-}
-
-#[derive(Debug, Eq, PartialEq)]
-pub enum CharacterAttributeUpdate {
-    Ability(AbilityName, i32),
-    Level(i32),
-    JackOfAllTrades(bool),
-    SavingThrowProficiency(AbilityName, bool),
-    SkillProficiency(SkillName, Proficiency),
-    WeaponProficiency(WeaponName, bool),
-    WeaponCategoryProficiency(Category, bool),
-}
-
-impl fmt::Display for CharacterAttributeUpdate {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            CharacterAttributeUpdate::Ability(ability, score) => {
-                write!(f, "{} score = {}", ability.as_str(), score)
-            }
-            CharacterAttributeUpdate::Level(level) => write!(f, "Level = {}", level),
-            CharacterAttributeUpdate::JackOfAllTrades(jack_of_all_trades) => write!(
-                f,
-                "Jack of all trades = {}",
-                if *jack_of_all_trades { "Yes" } else { "No" }
-            ),
-            CharacterAttributeUpdate::SavingThrowProficiency(ability, proficient) => write!(
-                f,
-                "{} saving throw = {}",
-                ability.as_str(),
-                if *proficient { "Proficient" } else { "Normal" }
-            ),
-            CharacterAttributeUpdate::SkillProficiency(skill, proficiency) => {
-                write!(f, "{} = {}", skill.as_str(), proficiency.as_str())
-            }
-            CharacterAttributeUpdate::WeaponProficiency(name, proficient) => write!(
-                f,
-                "{} proficiency = {}",
-                name.as_str(),
-                if *proficient { "Proficient" } else { "Normal" }
-            ),
-            CharacterAttributeUpdate::WeaponCategoryProficiency(category, proficient) => write!(
-                f,
-                "{} weapon proficiency = {}",
-                category.as_str(),
-                if *proficient { "Proficient" } else { "Normal" }
-            ),
-        }
-    }
 }

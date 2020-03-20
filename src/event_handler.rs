@@ -1,8 +1,6 @@
 use crate::attack_roll::{AttackRoll, Handedness, ImprovisedWeaponAttackRoll, WeaponAttackRoll};
 use crate::channel::Channel;
-use crate::character::{
-    Ability, Character, CharacterAttribute, CharacterAttributeUpdate, SavingThrow, Skill,
-};
+use crate::character::{Ability, Character, CharacterAttribute, SavingThrow, Skill};
 use crate::character_roll::CharacterRoll;
 use crate::command;
 use crate::command::{Command, CommandResult};
@@ -91,10 +89,6 @@ impl Handler {
                         Ok(command) => {
                             if !is_admin && !channel.enabled {
                                 Action::IgnoreChannelDisabled
-                            } else if !is_admin && channel.locked && command.is_editing() {
-                                Action::Respond(Response::Warning(format!("It looks like you're trying to {}. You can't do that while the channel is locked.", command.description())))
-                            } else if !is_admin && command.is_admin() {
-                                Action::Respond(Response::Warning(format!("It looks like you're trying to {}. You need to be a channel admin to do that.", command.description())))
                             } else if is_private && !command.is_private() {
                                 Action::Respond(Response::Warning(format!("It looks like you're trying to {}. You can't do that in a private message.", command.description())))
                             } else {
@@ -119,12 +113,6 @@ impl Handler {
             Command::Help => Handler::help(),
             Command::HelpShorthand => Handler::help_shorthand(),
             Command::Roll(roll) => Handler::roll(roll),
-            Command::Set(attribute) => self.set(&attribute, channel_id, author_id),
-            Command::SetChannelDiceOnly(dice_only) => {
-                self.set_channel_dice_only(channel_id, dice_only)
-            }
-            Command::SetChannelEnabled(enabled) => self.set_channel_enabled(channel_id, enabled),
-            Command::SetChannelLocked(locked) => self.set_channel_locked(channel_id, locked),
             Command::Show(attribute) => self.show(&attribute, channel_id, author_id),
             Command::ShowAbilities => self.show_abilities(channel_id, author_id),
             Command::ShowSkills => self.show_skills(channel_id, author_id),
@@ -306,51 +294,6 @@ impl Handler {
                 f(connection).map_err(|error| Response::Error(Error::RusqliteError(error)))
             })
             .unwrap_or_else(identity)
-    }
-
-    fn set(
-        &self,
-        attribute: &CharacterAttributeUpdate,
-        channel_id: ChannelId,
-        author_id: UserId,
-    ) -> Response {
-        self.with_connection(|mut connection| {
-            Character::set_attribute(&mut connection, channel_id, author_id, attribute)
-                .map(|_| Response::Update(format!("Set {}", attribute)))
-        })
-    }
-
-    fn set_channel_dice_only(&self, channel_id: ChannelId, dice_only: bool) -> Response {
-        self.with_connection(|mut connection| {
-            Channel::set_dice_only(&mut connection, channel_id, dice_only).map(|_| {
-                Response::Update(format!(
-                    "Dice only mode is now {} in this channel.",
-                    if dice_only { "enabled" } else { "disabled" }
-                ))
-            })
-        })
-    }
-
-    fn set_channel_enabled(&self, channel_id: ChannelId, enabled: bool) -> Response {
-        self.with_connection(|mut connection| {
-            Channel::set_enabled(&mut connection, channel_id, enabled).map(|_| {
-                Response::Update(format!(
-                    "Dungeon Helper is now {} in this channel.",
-                    if enabled { "enabled" } else { "disabled" }
-                ))
-            })
-        })
-    }
-
-    fn set_channel_locked(&self, channel_id: ChannelId, locked: bool) -> Response {
-        self.with_connection(|mut connection| {
-            Channel::set_locked(&mut connection, channel_id, locked).map(|_| {
-                Response::Update(format!(
-                    "Character attributes are now {} in this channel.",
-                    if locked { "locked" } else { "unlocked" }
-                ))
-            })
-        })
     }
 
     fn show(
