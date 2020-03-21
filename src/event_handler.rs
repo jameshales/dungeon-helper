@@ -178,11 +178,11 @@ impl Handler {
                 let proficiency_bonus = character.proficiency_bonus();
                 let mut rng = rand::thread_rng();
                 let attack_roll_roll = attack_roll
-                    .to_attack_roll(strength, dexterity, proficiency_bonus, proficiency)
+                    .to_attack_roll(strength, dexterity, proficiency_bonus, proficiency, character.martial_arts())
                     .ok_or_else(|| Response::Warning(ABILITY_NOT_SET_WARNING_TEXT.to_owned()))?;
                 let attack_result = attack_roll_roll.roll(&mut rng);
                 let critical_hit = attack_result.critical() == Some(Critical::Success);
-                let damage_roll = attack_roll.to_damage_roll(strength, dexterity, proficiency_bonus, proficiency, critical_hit).ok_or_else(|| Response::Warning(ABILITY_NOT_SET_WARNING_TEXT.to_owned()))?;
+                let damage_roll = attack_roll.to_damage_roll(strength, dexterity, proficiency_bonus, proficiency, critical_hit, character.martial_arts_damage_die()).ok_or_else(|| Response::Warning(ABILITY_NOT_SET_WARNING_TEXT.to_owned()))?;
                 let damage_result = damage_roll.roll(&mut rng);
                 Ok((attack_roll_roll, attack_result, damage_roll, damage_result))
             })

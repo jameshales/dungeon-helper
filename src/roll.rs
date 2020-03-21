@@ -1,7 +1,7 @@
 use rand::distributions::{Distribution, Uniform};
 use rand::Rng;
 use regex::Regex;
-use std::cmp::Ordering;
+use std::cmp::{max, min, Ordering};
 use std::error;
 use std::fmt;
 
@@ -183,12 +183,34 @@ impl Roll {
         }
     }
 
+    /// Create a roll, clamping the rolls and sides to the minimum or maximum values if they are out
+    /// of the allowed ranges.
+    pub fn new_clamped(rolls: usize, sides: i32, modifier: i32) -> Roll {
+        Roll::new_unsafe(
+            min(rolls, MAXIMUM_ROLLS),
+            min(max(sides, 0), MAXIMUM_SIDES),
+            modifier,
+        )
+    }
+
     pub const fn new_unsafe(rolls: usize, sides: i32, modifier: i32) -> Roll {
         Roll {
             rolls,
             sides,
             modifier,
         }
+    }
+
+    pub fn rolls(&self) -> usize {
+        self.rolls
+    }
+
+    pub fn sides(&self) -> i32 {
+        self.sides
+    }
+
+    pub fn modifier(&self) -> i32 {
+        self.modifier
     }
 
     /// Parse a roll from a String using conventional Dungeons and Dragons syntax.
@@ -268,7 +290,7 @@ impl Roll {
     }
 
     pub fn multiply_rolls(&self, scalar: usize) -> Roll {
-        Roll::new_unsafe(scalar * self.rolls, self.sides, self.modifier)
+        Roll::new_clamped(scalar * self.rolls, self.sides, self.modifier)
     }
 }
 

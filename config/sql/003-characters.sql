@@ -8,6 +8,9 @@ CREATE TABLE characters (
   -- Jack of All Trades
   jack_of_all_trades BOOLEAN NOT NULL DEFAULT false,
 
+  -- Martial Arts (Monk trait)
+  martial_arts BOOLEAN NOT NULL DEFAULT false,
+
   -- Abilities
   strength INTEGER NULL,
   dexterity INTEGER NULL,
@@ -44,5 +47,5 @@ CREATE TABLE characters (
   stealth_proficiency TEXT NOT NULL DEFAULT 'Normal',
   survival_proficiency TEXT NOT NULL DEFAULT 'Normal',
 
-  PRIMARY KEY (channel_id, user_id)
+  PRIMARY KEY (channel_id, user_id),
 );

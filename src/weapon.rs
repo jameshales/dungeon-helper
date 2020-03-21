@@ -13,6 +13,17 @@ pub struct Weapon {
     pub thrown: bool,
     pub finesse: bool,
     pub versatile: Option<Roll>,
+    pub heavy: bool,
+}
+
+impl Weapon {
+    pub fn is_monk_weapon(&self) -> bool {
+        self.name == WeaponName::Shortsword
+            || (self.category == Category::Simple
+                && self.classification == Classification::Melee
+                && !self.two_handed
+                && !self.heavy)
+    }
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -383,6 +394,7 @@ static BATTLEAXE: Weapon = Weapon {
     thrown: false,
     finesse: false,
     versatile: Some(Roll::new_unsafe(1, 10, 0)),
+    heavy: false,
 };
 
 static CLUB: Weapon = Weapon {
@@ -395,6 +407,7 @@ static CLUB: Weapon = Weapon {
     thrown: false,
     finesse: false,
     versatile: None,
+    heavy: false,
 };
 
 static CROSSBOW_HAND: Weapon = Weapon {
@@ -407,6 +420,7 @@ static CROSSBOW_HAND: Weapon = Weapon {
     thrown: false,
     finesse: false,
     versatile: None,
+    heavy: false,
 };
 
 static CROSSBOW_HEAVY: Weapon = Weapon {
@@ -419,6 +433,7 @@ static CROSSBOW_HEAVY: Weapon = Weapon {
     thrown: false,
     finesse: false,
     versatile: None,
+    heavy: true,
 };
 
 static CROSSBOW_LIGHT: Weapon = Weapon {
@@ -431,6 +446,7 @@ static CROSSBOW_LIGHT: Weapon = Weapon {
     thrown: false,
     finesse: false,
     versatile: None,
+    heavy: false,
 };
 
 static DAGGER: Weapon = Weapon {
@@ -443,6 +459,7 @@ static DAGGER: Weapon = Weapon {
     thrown: true,
     finesse: true,
     versatile: None,
+    heavy: false,
 };
 
 static DART: Weapon = Weapon {
@@ -455,6 +472,7 @@ static DART: Weapon = Weapon {
     thrown: true,
     finesse: true,
     versatile: None,
+    heavy: false,
 };
 
 static FLAIL: Weapon = Weapon {
@@ -467,6 +485,7 @@ static FLAIL: Weapon = Weapon {
     thrown: false,
     finesse: false,
     versatile: None,
+    heavy: false,
 };
 
 static GLAIVE: Weapon = Weapon {
@@ -479,6 +498,7 @@ static GLAIVE: Weapon = Weapon {
     thrown: false,
     finesse: false,
     versatile: None,
+    heavy: true,
 };
 
 static GREATAXE: Weapon = Weapon {
@@ -491,6 +511,7 @@ static GREATAXE: Weapon = Weapon {
     thrown: false,
     finesse: false,
     versatile: None,
+    heavy: true,
 };
 
 static GREATCLUB: Weapon = Weapon {
@@ -503,6 +524,7 @@ static GREATCLUB: Weapon = Weapon {
     thrown: false,
     finesse: false,
     versatile: None,
+    heavy: false,
 };
 
 static GREATSWORD: Weapon = Weapon {
@@ -515,6 +537,7 @@ static GREATSWORD: Weapon = Weapon {
     thrown: false,
     finesse: false,
     versatile: None,
+    heavy: true,
 };
 
 static HALBERD: Weapon = Weapon {
@@ -527,6 +550,7 @@ static HALBERD: Weapon = Weapon {
     thrown: false,
     finesse: false,
     versatile: None,
+    heavy: true,
 };
 
 static HANDAXE: Weapon = Weapon {
@@ -539,6 +563,7 @@ static HANDAXE: Weapon = Weapon {
     thrown: true,
     finesse: false,
     versatile: None,
+    heavy: false,
 };
 
 static JAVELIN: Weapon = Weapon {
@@ -551,6 +576,7 @@ static JAVELIN: Weapon = Weapon {
     thrown: true,
     finesse: false,
     versatile: None,
+    heavy: false,
 };
 
 static LANCE: Weapon = Weapon {
@@ -563,6 +589,7 @@ static LANCE: Weapon = Weapon {
     thrown: false,
     finesse: false,
     versatile: None,
+    heavy: false,
 };
 
 static LIGHT_HAMMER: Weapon = Weapon {
@@ -575,6 +602,7 @@ static LIGHT_HAMMER: Weapon = Weapon {
     thrown: true,
     finesse: false,
     versatile: None,
+    heavy: false,
 };
 
 static LONGBOW: Weapon = Weapon {
@@ -587,6 +615,7 @@ static LONGBOW: Weapon = Weapon {
     thrown: false,
     finesse: false,
     versatile: None,
+    heavy: true,
 };
 
 static LONGSWORD: Weapon = Weapon {
@@ -599,6 +628,7 @@ static LONGSWORD: Weapon = Weapon {
     thrown: false,
     finesse: false,
     versatile: Some(Roll::new_unsafe(1, 10, 0)),
+    heavy: false,
 };
 
 static MACE: Weapon = Weapon {
@@ -611,6 +641,7 @@ static MACE: Weapon = Weapon {
     thrown: false,
     finesse: false,
     versatile: None,
+    heavy: false,
 };
 
 static MAUL: Weapon = Weapon {
@@ -623,6 +654,7 @@ static MAUL: Weapon = Weapon {
     thrown: false,
     finesse: false,
     versatile: None,
+    heavy: true,
 };
 
 static MORNINGSTAR: Weapon = Weapon {
@@ -635,6 +667,7 @@ static MORNINGSTAR: Weapon = Weapon {
     thrown: false,
     finesse: false,
     versatile: None,
+    heavy: false,
 };
 
 static PIKE: Weapon = Weapon {
@@ -647,6 +680,7 @@ static PIKE: Weapon = Weapon {
     thrown: false,
     finesse: false,
     versatile: None,
+    heavy: true,
 };
 
 static QUARTERSTAFF: Weapon = Weapon {
@@ -659,6 +693,7 @@ static QUARTERSTAFF: Weapon = Weapon {
     thrown: false,
     finesse: false,
     versatile: Some(Roll::new_unsafe(1, 8, 0)),
+    heavy: false,
 };
 
 static RAPIER: Weapon = Weapon {
@@ -671,6 +706,7 @@ static RAPIER: Weapon = Weapon {
     thrown: false,
     finesse: true,
     versatile: None,
+    heavy: false,
 };
 
 static SCIMITAR: Weapon = Weapon {
@@ -683,6 +719,7 @@ static SCIMITAR: Weapon = Weapon {
     thrown: false,
     finesse: true,
     versatile: None,
+    heavy: false,
 };
 
 static SHORTBOW: Weapon = Weapon {
@@ -695,6 +732,7 @@ static SHORTBOW: Weapon = Weapon {
     thrown: false,
     finesse: false,
     versatile: None,
+    heavy: false,
 };
 
 static SHORTSWORD: Weapon = Weapon {
@@ -707,6 +745,7 @@ static SHORTSWORD: Weapon = Weapon {
     thrown: false,
     finesse: true,
     versatile: None,
+    heavy: false,
 };
 
 static SICKLE: Weapon = Weapon {
@@ -719,6 +758,7 @@ static SICKLE: Weapon = Weapon {
     thrown: false,
     finesse: false,
     versatile: None,
+    heavy: false,
 };
 
 static SLING: Weapon = Weapon {
@@ -731,6 +771,7 @@ static SLING: Weapon = Weapon {
     thrown: false,
     finesse: false,
     versatile: None,
+    heavy: false,
 };
 
 static SPEAR: Weapon = Weapon {
@@ -743,6 +784,7 @@ static SPEAR: Weapon = Weapon {
     thrown: true,
     finesse: false,
     versatile: Some(Roll::new_unsafe(1, 8, 0)),
+    heavy: false,
 };
 
 static TRIDENT: Weapon = Weapon {
@@ -755,6 +797,7 @@ static TRIDENT: Weapon = Weapon {
     thrown: true,
     finesse: false,
     versatile: Some(Roll::new_unsafe(1, 8, 0)),
+    heavy: false,
 };
 
 static WAR_PICK: Weapon = Weapon {
@@ -767,6 +810,7 @@ static WAR_PICK: Weapon = Weapon {
     thrown: false,
     finesse: false,
     versatile: None,
+    heavy: false,
 };
 
 static WARHAMMER: Weapon = Weapon {
@@ -779,6 +823,7 @@ static WARHAMMER: Weapon = Weapon {
     thrown: false,
     finesse: false,
     versatile: Some(Roll::new_unsafe(1, 10, 0)),
+    heavy: false,
 };
 
 static WHIP: Weapon = Weapon {
@@ -791,4 +836,30 @@ static WHIP: Weapon = Weapon {
     thrown: false,
     finesse: true,
     versatile: None,
+    heavy: false,
 };
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_is_monk_weapon() {
+        // Shortsword - special case
+        assert_eq!(SHORTSWORD.is_monk_weapon(), true);
+
+        // One-handed, simple, melee
+        assert_eq!(CLUB.is_monk_weapon(), true);
+        assert_eq!(DAGGER.is_monk_weapon(), true);
+        assert_eq!(QUARTERSTAFF.is_monk_weapon(), true);
+
+        // Martial
+        assert_eq!(FLAIL.is_monk_weapon(), false);
+        assert_eq!(GREATCLUB.is_monk_weapon(), false);
+
+        // Ranged
+        assert_eq!(CROSSBOW_HEAVY.is_monk_weapon(), false);
+        assert_eq!(CROSSBOW_LIGHT.is_monk_weapon(), false);
+        assert_eq!(SHORTBOW.is_monk_weapon(), false);
+    }
+}
