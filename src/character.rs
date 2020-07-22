@@ -336,7 +336,7 @@ impl Character {
     }
 
     pub fn medicine(&self) -> Option<Skill> {
-        self.make_skill(self.intelligence(), self.medicine_proficiency)
+        self.make_skill(self.wisdom(), self.medicine_proficiency)
     }
 
     pub fn nature(&self) -> Option<Skill> {
