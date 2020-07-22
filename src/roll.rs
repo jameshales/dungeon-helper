@@ -296,11 +296,15 @@ impl Roll {
 
 impl fmt::Display for Roll {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}d{}", self.rolls, self.sides).and(match self.modifier.cmp(&0) {
-            Ordering::Greater => write!(f, " + {}", self.modifier),
-            Ordering::Less => write!(f, " - {}", self.modifier.abs()),
-            Ordering::Equal => Ok(()),
-        })
+        if self.rolls > 0 {
+            write!(f, "{}d{}", self.rolls, self.sides).and(match self.modifier.cmp(&0) {
+                Ordering::Greater => write!(f, " + {}", self.modifier),
+                Ordering::Less => write!(f, " - {}", self.modifier.abs()),
+                Ordering::Equal => Ok(()),
+            })
+        } else {
+            write!(f, "{}", self.modifier)
+        }
     }
 }
 
@@ -457,6 +461,16 @@ mod test {
         let roll = ConditionalRoll::new(1, 20, -3, None).unwrap();
 
         let expected = "1d20 - 3";
+        let actual = roll.to_string();
+
+        assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn test_display_roll_constant() {
+        let roll = ConditionalRoll::new(0, 20, 4, None).unwrap();
+
+        let expected = "4";
         let actual = roll.to_string();
 
         assert_eq!(actual, expected);
@@ -624,6 +638,34 @@ mod test {
         let mut rng = Pcg32::new(0, 0);
 
         let roll = ConditionalRoll::new(1, 20, 0, None).unwrap();
+
+        let distribution = RollDistribution { roll };
+
+        let _ = distribution
+            .sample_iter(&mut rng)
+            .take(100)
+            .map(|result| validate_conditional_result(&roll, &result));
+    }
+
+    #[test]
+    fn test_roll_constant_zero() {
+        let mut rng = Pcg32::new(0, 0);
+
+        let roll = ConditionalRoll::new(0, 1, 0, None).unwrap();
+
+        let distribution = RollDistribution { roll };
+
+        let _ = distribution
+            .sample_iter(&mut rng)
+            .take(100)
+            .map(|result| validate_conditional_result(&roll, &result));
+    }
+
+    #[test]
+    fn test_roll_constant_four() {
+        let mut rng = Pcg32::new(0, 0);
+
+        let roll = ConditionalRoll::new(0, 1, 4, None).unwrap();
 
         let distribution = RollDistribution { roll };
 
