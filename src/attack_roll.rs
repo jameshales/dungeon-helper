@@ -46,13 +46,9 @@ impl AttackRoll {
             AttackRoll::ImprovisedWeapon(roll) => {
                 roll.to_damage_roll(strength, dexterity, critical_hit)
             }
-            AttackRoll::UnarmedStrike(roll) => roll.to_damage_roll(
-                strength,
-                dexterity,
-                proficiency_bonus,
-                critical_hit,
-                martial_arts_damage_die,
-            ),
+            AttackRoll::UnarmedStrike(roll) => {
+                roll.to_damage_roll(strength, dexterity, critical_hit, martial_arts_damage_die)
+            }
             AttackRoll::Weapon(roll) => roll.to_damage_roll(
                 strength,
                 dexterity,
@@ -113,7 +109,11 @@ impl UnarmedStrikeAttackRoll {
         proficiency_bonus: Option<i32>,
         martial_arts: bool,
     ) -> Option<ConditionalRoll> {
-        let bonus = UnarmedStrikeAttackRoll::get_bonus(strength, dexterity, martial_arts)?;
+        let bonus = if martial_arts {
+            UnarmedStrikeAttackRoll::get_martial_arts_bonus(strength, dexterity)?
+        } else {
+            strength?
+        };
         Some(ConditionalRoll::new_unsafe(
             1,
             20,
@@ -126,35 +126,30 @@ impl UnarmedStrikeAttackRoll {
         &self,
         strength: Option<i32>,
         dexterity: Option<i32>,
-        proficiency_bonus: Option<i32>,
         critical_hit: bool,
         martial_arts_damage_die: Option<i32>,
     ) -> Option<ConditionalRoll> {
-        let multiplier = critical_hit_multiplier(critical_hit);
-        let bonus = UnarmedStrikeAttackRoll::get_bonus(
-            strength,
-            dexterity,
-            martial_arts_damage_die.is_some(),
-        )?;
-        let base = 4;
-        Some(ConditionalRoll::new_unsafe(
-            multiplier,
-            martial_arts_damage_die.map_or(base, |d| max(d, base)),
-            bonus + proficiency_bonus?,
-            None,
-        ))
+        match martial_arts_damage_die {
+            Some(martial_arts_damage_die) => {
+                let multiplier = critical_hit_multiplier(critical_hit);
+                let bonus = UnarmedStrikeAttackRoll::get_martial_arts_bonus(strength, dexterity)?;
+                Some(ConditionalRoll::new_unsafe(
+                    multiplier,
+                    martial_arts_damage_die,
+                    bonus,
+                    None,
+                ))
+            }
+            None => Some(ConditionalRoll::new_unsafe(0, 0, strength? + 1, None)),
+        }
     }
 
-    fn get_bonus(strength: Option<i32>, dexterity: Option<i32>, martial_arts: bool) -> Option<i32> {
-        if martial_arts {
-            match (strength, dexterity) {
-                (Some(strength), Some(dexterity)) => Some(max(strength, dexterity)),
-                (Some(strength), _) => Some(strength),
-                (_, Some(dexterity)) => Some(dexterity),
-                _ => None,
-            }
-        } else {
-            strength
+    fn get_martial_arts_bonus(strength: Option<i32>, dexterity: Option<i32>) -> Option<i32> {
+        match (strength, dexterity) {
+            (Some(strength), Some(dexterity)) => Some(max(strength, dexterity)),
+            (Some(strength), _) => Some(strength),
+            (_, Some(dexterity)) => Some(dexterity),
+            _ => None,
         }
     }
 }
@@ -454,7 +449,7 @@ mod test {
         let proficiency_bonus = 3;
 
         let expected_attack = Some(ConditionalRoll::new_unsafe(1, 20, 5, None));
-        let expected_damage = Some(ConditionalRoll::new_unsafe(1, 4, 5, None));
+        let expected_damage = Some(ConditionalRoll::new_unsafe(0, 0, 3, None));
 
         let actual_attack = roll.to_attack_roll(
             Some(strength),
@@ -462,13 +457,7 @@ mod test {
             Some(proficiency_bonus),
             false,
         );
-        let actual_damage = roll.to_damage_roll(
-            Some(strength),
-            Some(dexterity),
-            Some(proficiency_bonus),
-            false,
-            None,
-        );
+        let actual_damage = roll.to_damage_roll(Some(strength), Some(dexterity), false, None);
 
         assert_eq!(actual_attack, expected_attack);
         assert_eq!(actual_damage, expected_damage);
@@ -479,17 +468,10 @@ mod test {
         let roll = UnarmedStrikeAttackRoll { condition: None };
         let strength = 2;
         let dexterity = 4;
-        let proficiency_bonus = 3;
 
-        let expected_damage = Some(ConditionalRoll::new_unsafe(2, 4, 5, None));
+        let expected_damage = Some(ConditionalRoll::new_unsafe(0, 0, 3, None));
 
-        let actual_damage = roll.to_damage_roll(
-            Some(strength),
-            Some(dexterity),
-            Some(proficiency_bonus),
-            true,
-            None,
-        );
+        let actual_damage = roll.to_damage_roll(Some(strength), Some(dexterity), true, None);
 
         assert_eq!(actual_damage, expected_damage);
     }
@@ -509,7 +491,7 @@ mod test {
             2,
             Some(Condition::Advantage),
         ));
-        let expected_damage = Some(ConditionalRoll::new_unsafe(1, 4, 2, None));
+        let expected_damage = Some(ConditionalRoll::new_unsafe(0, 0, 0, None));
 
         let actual_attack = roll.to_attack_roll(
             Some(strength),
@@ -517,13 +499,7 @@ mod test {
             Some(proficiency_bonus),
             false,
         );
-        let actual_damage = roll.to_damage_roll(
-            Some(strength),
-            Some(dexterity),
-            Some(proficiency_bonus),
-            false,
-            None,
-        );
+        let actual_damage = roll.to_damage_roll(Some(strength), Some(dexterity), false, None);
 
         assert_eq!(actual_attack, expected_attack);
         assert_eq!(actual_damage, expected_damage);
@@ -544,7 +520,7 @@ mod test {
             3,
             Some(Condition::Disadvantage),
         ));
-        let expected_damage = Some(ConditionalRoll::new_unsafe(1, 4, 3, None));
+        let expected_damage = Some(ConditionalRoll::new_unsafe(0, 0, 3, None));
 
         let actual_attack = roll.to_attack_roll(
             Some(strength),
@@ -552,13 +528,7 @@ mod test {
             Some(proficiency_bonus),
             false,
         );
-        let actual_damage = roll.to_damage_roll(
-            Some(strength),
-            Some(dexterity),
-            Some(proficiency_bonus),
-            false,
-            None,
-        );
+        let actual_damage = roll.to_damage_roll(Some(strength), Some(dexterity), false, None);
 
         assert_eq!(actual_attack, expected_attack);
         assert_eq!(actual_damage, expected_damage);
@@ -575,8 +545,7 @@ mod test {
 
         let actual_attack =
             roll.to_attack_roll(None, Some(dexterity), Some(proficiency_bonus), false);
-        let actual_damage =
-            roll.to_damage_roll(None, Some(dexterity), Some(proficiency_bonus), false, None);
+        let actual_damage = roll.to_damage_roll(None, Some(dexterity), false, None);
 
         assert_eq!(actual_attack, expected_attack);
         assert_eq!(actual_damage, expected_damage);
@@ -589,13 +558,10 @@ mod test {
         let dexterity = 4;
 
         let expected_attack = None;
-        let expected_damage = None;
 
         let actual_attack = roll.to_attack_roll(Some(strength), Some(dexterity), None, false);
-        let actual_damage = roll.to_damage_roll(Some(strength), Some(dexterity), None, false, None);
 
         assert_eq!(actual_attack, expected_attack);
-        assert_eq!(actual_damage, expected_damage);
     }
 
     #[test]
@@ -606,7 +572,7 @@ mod test {
         let proficiency_bonus = 3;
 
         let expected_attack = Some(ConditionalRoll::new_unsafe(1, 20, 7, None));
-        let expected_damage = Some(ConditionalRoll::new_unsafe(1, 6, 7, None));
+        let expected_damage = Some(ConditionalRoll::new_unsafe(1, 6, 4, None));
 
         let actual_attack = roll.to_attack_roll(
             Some(strength),
@@ -614,13 +580,95 @@ mod test {
             Some(proficiency_bonus),
             true,
         );
-        let actual_damage = roll.to_damage_roll(
+        let actual_damage = roll.to_damage_roll(Some(strength), Some(dexterity), false, Some(6));
+
+        assert_eq!(actual_attack, expected_attack);
+        assert_eq!(actual_damage, expected_damage);
+    }
+
+    #[test]
+    fn test_unarmed_strike_roll_with_martial_arts_achen() {
+        let roll = UnarmedStrikeAttackRoll { condition: None };
+        let strength = 1;
+        let dexterity = 4;
+        let proficiency_bonus = 2;
+
+        let expected_attack = Some(ConditionalRoll::new_unsafe(1, 20, 6, None));
+        let expected_damage = Some(ConditionalRoll::new_unsafe(1, 4, 4, None));
+
+        let actual_attack = roll.to_attack_roll(
+            Some(strength),
+            Some(dexterity),
+            Some(proficiency_bonus),
+            true,
+        );
+        let actual_damage = roll.to_damage_roll(Some(strength), Some(dexterity), false, Some(4));
+
+        assert_eq!(actual_attack, expected_attack);
+        assert_eq!(actual_damage, expected_damage);
+    }
+
+    #[test]
+    fn test_unarmed_strike_roll_without_martial_arts_connie() {
+        let roll = UnarmedStrikeAttackRoll { condition: None };
+        let strength = 2;
+        let dexterity = -1;
+        let proficiency_bonus = 2;
+
+        let expected_attack = Some(ConditionalRoll::new_unsafe(1, 20, 4, None));
+        let expected_damage = Some(ConditionalRoll::new_unsafe(0, 0, 3, None));
+
+        let actual_attack = roll.to_attack_roll(
             Some(strength),
             Some(dexterity),
             Some(proficiency_bonus),
             false,
-            Some(6),
         );
+        let actual_damage = roll.to_damage_roll(Some(strength), Some(dexterity), false, None);
+
+        assert_eq!(actual_attack, expected_attack);
+        assert_eq!(actual_damage, expected_damage);
+    }
+
+    #[test]
+    fn test_unarmed_strike_roll_with_martial_arts_loeguo() {
+        let roll = UnarmedStrikeAttackRoll { condition: None };
+        let strength = 3;
+        let dexterity = -1;
+        let proficiency_bonus = 2;
+
+        let expected_attack = Some(ConditionalRoll::new_unsafe(1, 20, 5, None));
+        let expected_damage = Some(ConditionalRoll::new_unsafe(1, 4, 3, None));
+
+        let actual_attack = roll.to_attack_roll(
+            Some(strength),
+            Some(dexterity),
+            Some(proficiency_bonus),
+            true,
+        );
+        let actual_damage = roll.to_damage_roll(Some(strength), Some(dexterity), false, Some(4));
+
+        assert_eq!(actual_attack, expected_attack);
+        assert_eq!(actual_damage, expected_damage);
+    }
+
+    #[test]
+    fn test_unarmed_strike_roll_without_martial_arts_tocha() {
+        let roll = UnarmedStrikeAttackRoll { condition: None };
+        let strength = 2;
+        let dexterity = 3;
+        let proficiency_bonus = 2;
+
+        let expected_attack = Some(ConditionalRoll::new_unsafe(1, 20, 4, None));
+        let expected_damage = Some(ConditionalRoll::new_unsafe(0, 0, 3, None));
+
+        let actual_attack = roll.to_attack_roll(
+            Some(strength),
+            Some(dexterity),
+            Some(proficiency_bonus),
+            false,
+        );
+        let actual_damage = roll.to_damage_roll(Some(strength), Some(dexterity), false, None);
 
         assert_eq!(actual_attack, expected_attack);
         assert_eq!(actual_damage, expected_damage);
@@ -634,7 +682,7 @@ mod test {
         let proficiency_bonus = 3;
 
         let expected_attack = Some(ConditionalRoll::new_unsafe(1, 20, 7, None));
-        let expected_damage = Some(ConditionalRoll::new_unsafe(1, 6, 7, None));
+        let expected_damage = Some(ConditionalRoll::new_unsafe(1, 6, 4, None));
 
         let actual_attack = roll.to_attack_roll(
             Some(strength),
@@ -642,13 +690,7 @@ mod test {
             Some(proficiency_bonus),
             true,
         );
-        let actual_damage = roll.to_damage_roll(
-            Some(strength),
-            Some(dexterity),
-            Some(proficiency_bonus),
-            false,
-            Some(6),
-        );
+        let actual_damage = roll.to_damage_roll(Some(strength), Some(dexterity), false, Some(6));
 
         assert_eq!(actual_attack, expected_attack);
         assert_eq!(actual_damage, expected_damage);
@@ -662,7 +704,7 @@ mod test {
         let proficiency_bonus = 3;
 
         let expected_attack = Some(ConditionalRoll::new_unsafe(1, 20, 7, None));
-        let expected_damage = Some(ConditionalRoll::new_unsafe(1, 4, 7, None));
+        let expected_damage = Some(ConditionalRoll::new_unsafe(1, 3, 4, None));
 
         let actual_attack = roll.to_attack_roll(
             Some(strength),
@@ -670,13 +712,7 @@ mod test {
             Some(proficiency_bonus),
             true,
         );
-        let actual_damage = roll.to_damage_roll(
-            Some(strength),
-            Some(dexterity),
-            Some(proficiency_bonus),
-            false,
-            Some(3),
-        );
+        let actual_damage = roll.to_damage_roll(Some(strength), Some(dexterity), false, Some(3));
 
         assert_eq!(actual_attack, expected_attack);
         assert_eq!(actual_damage, expected_damage);
@@ -690,7 +726,7 @@ mod test {
         let proficiency_bonus = 3;
 
         let expected_attack = Some(ConditionalRoll::new_unsafe(1, 20, 7, None));
-        let expected_damage = Some(ConditionalRoll::new_unsafe(1, 4, 7, None));
+        let expected_damage = Some(ConditionalRoll::new_unsafe(1, 3, 4, None));
 
         let actual_attack = roll.to_attack_roll(
             Some(strength),
@@ -698,13 +734,7 @@ mod test {
             Some(proficiency_bonus),
             true,
         );
-        let actual_damage = roll.to_damage_roll(
-            Some(strength),
-            Some(dexterity),
-            Some(proficiency_bonus),
-            false,
-            Some(3),
-        );
+        let actual_damage = roll.to_damage_roll(Some(strength), Some(dexterity), false, Some(3));
 
         assert_eq!(actual_attack, expected_attack);
         assert_eq!(actual_damage, expected_damage);
