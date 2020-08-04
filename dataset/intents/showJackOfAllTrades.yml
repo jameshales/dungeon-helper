@@ -1,6 +1,0 @@
-type: intent
-name: showJackOfAllTrades
-utterances:
-  - Am I a jack of all trades?
-  - Do I have jack of all trades?
-  - Jack of all trades?

@@ -1,4 +1,3 @@
-use crate::character::CharacterAttribute;
 use crate::character_roll::CharacterRoll;
 use crate::error;
 use crate::intent_parser::parse_intent_result;
@@ -20,10 +19,6 @@ pub enum Command {
     Help,
     HelpShorthand,
     Roll(crate::roll::ConditionalRoll),
-    Show(CharacterAttribute),
-    ShowAbilities,
-    ShowSkills,
-    ShowWeaponProficiencies,
 }
 
 impl Command {
@@ -33,10 +28,6 @@ impl Command {
             Command::CharacterRoll(_) => "perform a character roll",
             Command::Help | Command::HelpShorthand => "ask for help",
             Command::Roll(_) => "perform a roll",
-            Command::Show(_) => "show a character attribute",
-            Command::ShowAbilities => "show a character's abilities",
-            Command::ShowSkills => "show a character's skills",
-            Command::ShowWeaponProficiencies => "show a character's weapon proficiencies",
         }
     }
 }
@@ -59,11 +50,6 @@ pub enum Error {
     RollDiceInvalid(RollError, usize, i32),
     RollSavingThrowMissingAbility,
     RollSkillMissingSkill,
-    ShowAbilityMissingAbility,
-    ShowPassiveAbilityMissingAbility,
-    ShowPassiveSkillMissingSkill,
-    ShowSavingThrowMissingAbility,
-    ShowSkillMissingSkill,
     UnknownIntent(String),
 }
 
@@ -124,21 +110,6 @@ impl fmt::Display for Error {
             }
             Error::RollSkillMissingSkill => {
                 write!(f, "It looks like you're trying to roll a skill check, but I'm not sure what skill you want. Try \"Roll stealth\", \"Athletics check\", etc.")
-            }
-            Error::ShowAbilityMissingAbility => {
-                write!(f, "It looks like you're trying to view an ability score, but I'm not sure what ability you want. Try \"Show strength\", \"Display dexterity\", etc.")
-            }
-            Error::ShowPassiveAbilityMissingAbility => {
-                write!(f, "It looks like you're trying to view a passive ability score, but I'm not sure what ability you want. Try \"Show passive strength\", \"Display passive dexterity\", etc.")
-            }
-            Error::ShowPassiveSkillMissingSkill => {
-                write!(f, "It looks like you're trying to view a passive skill score, but I'm not sure what skill you want. Try \"Show passive athletics\", \"Display passive stealth\", etc.")
-            }
-            Error::ShowSavingThrowMissingAbility => {
-                write!(f, "It looks like you're trying to view a saving throw modifier, but I'm not sure what ability you want. Try \"Show strength saving throw\", \"Display passive saving throw\", etc.")
-            }
-            Error::ShowSkillMissingSkill => {
-                write!(f, "It looks like you're trying to view a skill modifier, but I'm not sure what skill you want. Try \"Show athletics\", \"Display stealth\", etc.")
             }
             Error::NoIntent => {
                 write!(f, "I'm not sure what you mean. Try asking again with a different or simpler phrasing. Try asking for help to see some examples.")

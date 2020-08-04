@@ -1,7 +1,7 @@
 use crate::attack_roll::{
     AttackRoll, Handedness, ImprovisedWeaponAttackRoll, UnarmedStrikeAttackRoll, WeaponAttackRoll,
 };
-use crate::character::{AbilityName, CharacterAttribute, SkillName};
+use crate::character::{AbilityName, SkillName};
 use crate::character_roll::{CharacterRoll, Check};
 use crate::command::{Command, Error};
 use crate::roll::{Condition, ConditionalRoll};
@@ -23,18 +23,7 @@ pub fn parse_intent_result(result: &IntentParserResult) -> Result<Command, Error
             "rollSavingThrow" => parse_roll_saving_throw(&slots),
             "rollSkill" => parse_roll_skill(&slots),
             "rollUnarmedStrike" => Ok(parse_roll_unarmed_strike(&slots)),
-            "showAbilities" => Ok(Command::ShowAbilities),
-            "showAbility" => parse_show_ability(&slots),
             "showHelp" => Ok(Command::Help),
-            "showInitiative" => Ok(Command::Show(CharacterAttribute::Initiative)),
-            "showJackOfAllTrades" => Ok(Command::Show(CharacterAttribute::JackOfAllTrades)),
-            "showLevel" => Ok(Command::Show(CharacterAttribute::Level)),
-            "showPassiveAbility" => parse_show_passive_ability(&slots),
-            "showPassiveSkill" => parse_show_passive_skill(&slots),
-            "showSavingThrow" => parse_show_saving_throw(&slots),
-            "showSkill" => parse_show_skill(&slots),
-            "showSkills" => Ok(Command::ShowSkills),
-            "showWeaponProficiencies" => Ok(Command::ShowWeaponProficiencies),
             intent_name => Err(Error::UnknownIntent(intent_name.to_owned())),
         })
 }
@@ -146,41 +135,6 @@ fn parse_roll_unarmed_strike(slots: &[Slot]) -> Command {
     let condition = extract_condition_slot(slots);
     let roll = AttackRoll::UnarmedStrike(UnarmedStrikeAttackRoll { condition });
     Command::AttackRoll(roll)
-}
-
-fn parse_show_ability(slots: &[Slot]) -> Result<Command, Error> {
-    let ability = extract_ability_slot(slots);
-    ability
-        .ok_or(Error::ShowAbilityMissingAbility)
-        .map(|ability| Command::Show(CharacterAttribute::Ability(ability)))
-}
-
-fn parse_show_passive_ability(slots: &[Slot]) -> Result<Command, Error> {
-    let ability = extract_ability_slot(slots);
-    ability
-        .ok_or(Error::ShowPassiveAbilityMissingAbility)
-        .map(|ability| Command::Show(CharacterAttribute::PassiveAbility(ability)))
-}
-
-fn parse_show_passive_skill(slots: &[Slot]) -> Result<Command, Error> {
-    let skill = extract_skill_slot(slots);
-    skill
-        .ok_or(Error::ShowPassiveSkillMissingSkill)
-        .map(|skill| Command::Show(CharacterAttribute::PassiveSkill(skill)))
-}
-
-fn parse_show_saving_throw(slots: &[Slot]) -> Result<Command, Error> {
-    let ability = extract_ability_slot(slots);
-    ability
-        .ok_or(Error::ShowSavingThrowMissingAbility)
-        .map(|ability| Command::Show(CharacterAttribute::SavingThrow(ability)))
-}
-
-fn parse_show_skill(slots: &[Slot]) -> Result<Command, Error> {
-    let skill = extract_skill_slot(slots);
-    skill
-        .ok_or(Error::ShowSkillMissingSkill)
-        .map(|skill| Command::Show(CharacterAttribute::Skill(skill)))
 }
 
 fn extract_ability_slot(slots: &[Slot]) -> Option<AbilityName> {

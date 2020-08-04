@@ -1,4 +1,4 @@
-use crate::weapon::{Category, WeaponName, WeaponProficiency};
+use crate::weapon::{Category, WeaponName};
 use rusqlite::types::{FromSql, FromSqlError, FromSqlResult, ToSql, ToSqlOutput, ValueRef};
 use rusqlite::Result as RusqliteResult;
 use rusqlite::{Connection, OptionalExtension, Row};
@@ -145,14 +145,6 @@ impl Character {
         })
     }
 
-    pub fn level(&self) -> Option<i32> {
-        self.level
-    }
-
-    pub fn jack_of_all_trades(&self) -> bool {
-        self.jack_of_all_trades
-    }
-
     pub fn martial_arts(&self) -> bool {
         self.martial_arts
     }
@@ -211,10 +203,6 @@ impl Character {
             score: score?,
             modifier: score? / 2 - 5,
         })
-    }
-
-    pub fn passive_ability(&self, name: AbilityName) -> Option<i32> {
-        self.ability(name).map(|a| 10 + a.modifier)
     }
 
     // Saving Throws
@@ -293,10 +281,6 @@ impl Character {
             SkillName::Stealth => self.stealth(),
             SkillName::Survival => self.survival(),
         }
-    }
-
-    pub fn passive_skill(&self, name: SkillName) -> Option<i32> {
-        self.skill(name).map(|s| 10 + s.modifier)
     }
 
     pub fn acrobatics(&self) -> Option<Skill> {
@@ -410,25 +394,6 @@ impl Character {
             )
             .optional()
             .map(|result| result.unwrap_or(false))
-    }
-
-    pub fn get_weapon_proficiencies(
-        connection: &Connection,
-        channel_id: ChannelId,
-        user_id: UserId,
-    ) -> RusqliteResult<Vec<WeaponProficiency>> {
-        connection.prepare("SELECT weapon_name, weapon_category FROM character_weapon_proficiencies WHERE channel_id = $1 AND user_id = $2 ORDER BY weapon_name, weapon_category ASC")
-            .and_then(|mut statement| {
-                statement.query_map(
-                    &[&channel_id.to_string(), &user_id.to_string()],
-                    |row| Ok((row.get("weapon_name")?, row.get("weapon_category")?))
-                ).and_then(|weapon_names| weapon_names.filter_map(|result| match result {
-                    Ok((Some(name), _)) => Some(Ok(WeaponProficiency::WeaponName(name))),
-                    Ok((_, Some(category))) => Some(Ok(WeaponProficiency::Category(category))),
-                    Ok(_) => None,
-                    Err(error) => Some(Err(error)),
-                }).collect())
-            })
     }
 }
 
@@ -615,18 +580,6 @@ impl SkillName {
             SkillName::Survival => "Survival",
         }
     }
-}
-
-#[derive(Debug, Eq, PartialEq)]
-pub enum CharacterAttribute {
-    Ability(AbilityName),
-    Initiative,
-    Level,
-    JackOfAllTrades,
-    PassiveAbility(AbilityName),
-    PassiveSkill(SkillName),
-    SavingThrow(AbilityName),
-    Skill(SkillName),
 }
 
 #[cfg(test)]
@@ -870,112 +823,6 @@ mod test {
     }
 
     #[test]
-    fn test_passive_ability() {
-        fn character(strength: Option<i32>) -> Character {
-            Character {
-                level: None,
-                jack_of_all_trades: false,
-                martial_arts: false,
-
-                strength,
-                dexterity: None,
-                constitution: None,
-                intelligence: None,
-                wisdom: None,
-                charisma: None,
-
-                strength_saving_proficiency: false,
-                dexterity_saving_proficiency: false,
-                constitution_saving_proficiency: false,
-                intelligence_saving_proficiency: false,
-                wisdom_saving_proficiency: false,
-                charisma_saving_proficiency: false,
-
-                acrobatics_proficiency: Proficiency::Normal,
-                animal_handling_proficiency: Proficiency::Normal,
-                arcana_proficiency: Proficiency::Normal,
-                athletics_proficiency: Proficiency::Normal,
-                deception_proficiency: Proficiency::Normal,
-                history_proficiency: Proficiency::Normal,
-                insight_proficiency: Proficiency::Normal,
-                intimidation_proficiency: Proficiency::Normal,
-                investigation_proficiency: Proficiency::Normal,
-                medicine_proficiency: Proficiency::Normal,
-                nature_proficiency: Proficiency::Normal,
-                perception_proficiency: Proficiency::Normal,
-                performance_proficiency: Proficiency::Normal,
-                persuasion_proficiency: Proficiency::Normal,
-                religion_proficiency: Proficiency::Normal,
-                sleight_of_hand_proficiency: Proficiency::Normal,
-                stealth_proficiency: Proficiency::Normal,
-                survival_proficiency: Proficiency::Normal,
-            }
-        }
-
-        assert_eq!(character(None).passive_ability(AbilityName::Strength), None);
-        assert_eq!(
-            character(Some(1)).passive_ability(AbilityName::Strength),
-            Some(5)
-        );
-        assert_eq!(
-            character(Some(2)).passive_ability(AbilityName::Strength),
-            Some(6)
-        );
-        assert_eq!(
-            character(Some(3)).passive_ability(AbilityName::Strength),
-            Some(6)
-        );
-        assert_eq!(
-            character(Some(4)).passive_ability(AbilityName::Strength),
-            Some(7)
-        );
-        assert_eq!(
-            character(Some(5)).passive_ability(AbilityName::Strength),
-            Some(7)
-        );
-        assert_eq!(
-            character(Some(6)).passive_ability(AbilityName::Strength),
-            Some(8)
-        );
-        assert_eq!(
-            character(Some(7)).passive_ability(AbilityName::Strength),
-            Some(8)
-        );
-        assert_eq!(
-            character(Some(8)).passive_ability(AbilityName::Strength),
-            Some(9)
-        );
-        assert_eq!(
-            character(Some(9)).passive_ability(AbilityName::Strength),
-            Some(9)
-        );
-        assert_eq!(
-            character(Some(10)).passive_ability(AbilityName::Strength),
-            Some(10)
-        );
-        assert_eq!(
-            character(Some(11)).passive_ability(AbilityName::Strength),
-            Some(10)
-        );
-        assert_eq!(
-            character(Some(12)).passive_ability(AbilityName::Strength),
-            Some(11)
-        );
-        assert_eq!(
-            character(Some(13)).passive_ability(AbilityName::Strength),
-            Some(11)
-        );
-        assert_eq!(
-            character(Some(29)).passive_ability(AbilityName::Strength),
-            Some(19)
-        );
-        assert_eq!(
-            character(Some(30)).passive_ability(AbilityName::Strength),
-            Some(20)
-        );
-    }
-
-    #[test]
     fn test_saving_throw() {
         fn character(strength: Option<i32>) -> Character {
             Character {
@@ -1145,18 +992,6 @@ mod test {
             }
         }
 
-        assert_eq!(
-            character(None, None, Proficiency::Normal).passive_skill(SkillName::Athletics),
-            None
-        );
-        assert_eq!(
-            character(Some(1), None, Proficiency::Normal).passive_skill(SkillName::Athletics),
-            None
-        );
-        assert_eq!(
-            character(None, Some(1), Proficiency::Normal).passive_skill(SkillName::Athletics),
-            None
-        );
         assert_eq!(
             character(Some(1), Some(1), Proficiency::Normal).skill(SkillName::Athletics),
             Some(Skill {
@@ -1366,202 +1201,6 @@ mod test {
                 modifier: 12,
                 proficiency: Proficiency::Proficient
             })
-        );
-    }
-
-    #[test]
-    fn test_passive_skill() {
-        fn character(
-            level: Option<i32>,
-            strength: Option<i32>,
-            athletics_proficiency: Proficiency,
-        ) -> Character {
-            Character {
-                level,
-                jack_of_all_trades: false,
-                martial_arts: false,
-
-                strength,
-                dexterity: None,
-                constitution: None,
-                intelligence: None,
-                wisdom: None,
-                charisma: None,
-
-                strength_saving_proficiency: false,
-                dexterity_saving_proficiency: false,
-                constitution_saving_proficiency: false,
-                intelligence_saving_proficiency: false,
-                wisdom_saving_proficiency: false,
-                charisma_saving_proficiency: false,
-
-                acrobatics_proficiency: Proficiency::Normal,
-                animal_handling_proficiency: Proficiency::Normal,
-                arcana_proficiency: Proficiency::Normal,
-                athletics_proficiency,
-                deception_proficiency: Proficiency::Normal,
-                history_proficiency: Proficiency::Normal,
-                insight_proficiency: Proficiency::Normal,
-                intimidation_proficiency: Proficiency::Normal,
-                investigation_proficiency: Proficiency::Normal,
-                medicine_proficiency: Proficiency::Normal,
-                nature_proficiency: Proficiency::Normal,
-                perception_proficiency: Proficiency::Normal,
-                performance_proficiency: Proficiency::Normal,
-                persuasion_proficiency: Proficiency::Normal,
-                religion_proficiency: Proficiency::Normal,
-                sleight_of_hand_proficiency: Proficiency::Normal,
-                stealth_proficiency: Proficiency::Normal,
-                survival_proficiency: Proficiency::Normal,
-            }
-        }
-
-        assert_eq!(
-            character(None, None, Proficiency::Normal).passive_skill(SkillName::Athletics),
-            None
-        );
-        assert_eq!(
-            character(Some(1), None, Proficiency::Normal).passive_skill(SkillName::Athletics),
-            None
-        );
-        assert_eq!(
-            character(None, Some(1), Proficiency::Normal).passive_skill(SkillName::Athletics),
-            None
-        );
-        assert_eq!(
-            character(Some(1), Some(1), Proficiency::Normal).passive_skill(SkillName::Athletics),
-            Some(5)
-        );
-        assert_eq!(
-            character(Some(1), Some(2), Proficiency::Normal).passive_skill(SkillName::Athletics),
-            Some(6)
-        );
-        assert_eq!(
-            character(Some(1), Some(3), Proficiency::Normal).passive_skill(SkillName::Athletics),
-            Some(6)
-        );
-        assert_eq!(
-            character(Some(1), Some(4), Proficiency::Normal).passive_skill(SkillName::Athletics),
-            Some(7)
-        );
-        assert_eq!(
-            character(Some(1), Some(5), Proficiency::Normal).passive_skill(SkillName::Athletics),
-            Some(7)
-        );
-        assert_eq!(
-            character(Some(1), Some(6), Proficiency::Normal).passive_skill(SkillName::Athletics),
-            Some(8)
-        );
-        assert_eq!(
-            character(Some(1), Some(7), Proficiency::Normal).passive_skill(SkillName::Athletics),
-            Some(8)
-        );
-        assert_eq!(
-            character(Some(1), Some(8), Proficiency::Normal).passive_skill(SkillName::Athletics),
-            Some(9)
-        );
-        assert_eq!(
-            character(Some(1), Some(9), Proficiency::Normal).passive_skill(SkillName::Athletics),
-            Some(9)
-        );
-        assert_eq!(
-            character(Some(1), Some(10), Proficiency::Normal).passive_skill(SkillName::Athletics),
-            Some(10)
-        );
-        assert_eq!(
-            character(Some(1), Some(11), Proficiency::Normal).passive_skill(SkillName::Athletics),
-            Some(10)
-        );
-        assert_eq!(
-            character(Some(1), Some(12), Proficiency::Normal).passive_skill(SkillName::Athletics),
-            Some(11)
-        );
-        assert_eq!(
-            character(Some(1), Some(13), Proficiency::Normal).passive_skill(SkillName::Athletics),
-            Some(11)
-        );
-        assert_eq!(
-            character(Some(1), Some(29), Proficiency::Normal).passive_skill(SkillName::Athletics),
-            Some(19)
-        );
-        assert_eq!(
-            character(Some(1), Some(30), Proficiency::Normal).passive_skill(SkillName::Athletics),
-            Some(20)
-        );
-        assert_eq!(
-            character(Some(1), Some(1), Proficiency::Proficient)
-                .passive_skill(SkillName::Athletics),
-            Some(7)
-        );
-        assert_eq!(
-            character(Some(1), Some(2), Proficiency::Proficient)
-                .passive_skill(SkillName::Athletics),
-            Some(8)
-        );
-        assert_eq!(
-            character(Some(1), Some(3), Proficiency::Proficient)
-                .passive_skill(SkillName::Athletics),
-            Some(8)
-        );
-        assert_eq!(
-            character(Some(1), Some(4), Proficiency::Proficient)
-                .passive_skill(SkillName::Athletics),
-            Some(9)
-        );
-        assert_eq!(
-            character(Some(1), Some(5), Proficiency::Proficient)
-                .passive_skill(SkillName::Athletics),
-            Some(9)
-        );
-        assert_eq!(
-            character(Some(1), Some(6), Proficiency::Proficient)
-                .passive_skill(SkillName::Athletics),
-            Some(10)
-        );
-        assert_eq!(
-            character(Some(1), Some(7), Proficiency::Proficient)
-                .passive_skill(SkillName::Athletics),
-            Some(10)
-        );
-        assert_eq!(
-            character(Some(1), Some(8), Proficiency::Proficient)
-                .passive_skill(SkillName::Athletics),
-            Some(11)
-        );
-        assert_eq!(
-            character(Some(1), Some(9), Proficiency::Proficient)
-                .passive_skill(SkillName::Athletics),
-            Some(11)
-        );
-        assert_eq!(
-            character(Some(1), Some(10), Proficiency::Proficient)
-                .passive_skill(SkillName::Athletics),
-            Some(12)
-        );
-        assert_eq!(
-            character(Some(1), Some(11), Proficiency::Proficient)
-                .passive_skill(SkillName::Athletics),
-            Some(12)
-        );
-        assert_eq!(
-            character(Some(1), Some(12), Proficiency::Proficient)
-                .passive_skill(SkillName::Athletics),
-            Some(13)
-        );
-        assert_eq!(
-            character(Some(1), Some(13), Proficiency::Proficient)
-                .passive_skill(SkillName::Athletics),
-            Some(13)
-        );
-        assert_eq!(
-            character(Some(1), Some(29), Proficiency::Proficient)
-                .passive_skill(SkillName::Athletics),
-            Some(21)
-        );
-        assert_eq!(
-            character(Some(1), Some(30), Proficiency::Proficient)
-                .passive_skill(SkillName::Athletics),
-            Some(22)
         );
     }
 }

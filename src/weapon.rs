@@ -369,21 +369,6 @@ pub enum DamageType {
     Slashing,
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum WeaponProficiency {
-    Category(Category),
-    WeaponName(WeaponName),
-}
-
-impl fmt::Display for WeaponProficiency {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            WeaponProficiency::Category(category) => write!(f, "{} weapons", category),
-            WeaponProficiency::WeaponName(name) => name.fmt(f),
-        }
-    }
-}
-
 static BATTLEAXE: Weapon = Weapon {
     name: WeaponName::Battleaxe,
     category: Category::Martial,

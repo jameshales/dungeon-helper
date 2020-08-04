@@ -6,7 +6,6 @@ pub enum Response {
     DiceRoll(String),
     Error(Error),
     Help(String),
-    Show(String),
     Warning(String),
 }
 
@@ -20,7 +19,6 @@ impl Response {
                 author_id, message_id
             ),
             Response::Help(message) => format!("🎱 <@{}> {}", author_id, message),
-            Response::Show(message) => format!("<@{}> {}", author_id, message),
             Response::Warning(message) => format!("⚠️ <@{}> {}", author_id, message),
         }
     }
