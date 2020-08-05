@@ -37,8 +37,6 @@ impl AttackRoll {
         &self,
         strength: Option<i32>,
         dexterity: Option<i32>,
-        proficiency_bonus: Option<i32>,
-        proficiency: bool,
         critical_hit: bool,
         martial_arts_damage_die: Option<i32>,
     ) -> Option<ConditionalRoll> {
@@ -52,8 +50,6 @@ impl AttackRoll {
             AttackRoll::Weapon(roll) => roll.to_damage_roll(
                 strength,
                 dexterity,
-                proficiency_bonus,
-                proficiency,
                 critical_hit,
                 martial_arts_damage_die,
             ),
@@ -171,7 +167,7 @@ impl WeaponAttackRoll {
         proficiency: bool,
         martial_arts: bool,
     ) -> Option<ConditionalRoll> {
-        let modifier = self.modifier(
+        let modifier = self.attack_modifier(
             strength,
             dexterity,
             proficiency_bonus,
@@ -190,8 +186,6 @@ impl WeaponAttackRoll {
         &self,
         strength: Option<i32>,
         dexterity: Option<i32>,
-        proficiency_bonus: Option<i32>,
-        proficiency: bool,
         critical_hit: bool,
         martial_arts_damage_die: Option<i32>,
     ) -> Option<ConditionalRoll> {
@@ -215,20 +209,14 @@ impl WeaponAttackRoll {
         };
 
         let multiplier = critical_hit_multiplier(critical_hit);
-        let modifier = self.modifier(
-            strength,
-            dexterity,
-            proficiency_bonus,
-            proficiency,
-            martial_arts_damage_die.is_some(),
-        );
+        let modifier = self.damage_modifier(strength, dexterity, martial_arts_damage_die.is_some());
         Some(ConditionalRoll::from_roll(
             roll.multiply_rolls(multiplier).add_modifier(modifier?),
             None,
         ))
     }
 
-    fn modifier(
+    fn attack_modifier(
         &self,
         strength: Option<i32>,
         dexterity: Option<i32>,
@@ -254,6 +242,35 @@ impl WeaponAttackRoll {
             | (Classification::Melee, Classification::Melee, _, true, false)
             // Use a thrown melee weapon with finesse as a ranged weapon
             | (Classification::Ranged, Classification::Melee, true, true, _) => max(strength?, dexterity?) + proficiency_bonus?,
+            // Use a ranged weapon as a melee weapon (counts as improvised)
+            (Classification::Melee, Classification::Ranged, _, _, _) => strength?,
+            // Use a melee weapon as a ranged weapon (counts as improvised)
+            (Classification::Ranged, Classification::Melee, false, _, _) => dexterity?,
+        };
+        Some(modifier)
+    }
+
+    fn damage_modifier(
+        &self,
+        strength: Option<i32>,
+        dexterity: Option<i32>,
+        martial_arts: bool,
+    ) -> Option<i32> {
+        let weapon = self.weapon.to_weapon();
+        let modifier = match (self.classification.unwrap_or(weapon.classification), weapon.classification, weapon.thrown, weapon.finesse, martial_arts && weapon.is_monk_weapon()) {
+            // Use a melee weapon as a melee weapon
+            (Classification::Melee, Classification::Melee, _, false, false)
+            // Use a thrown melee weapon as a ranged weapon
+            | (Classification::Ranged, Classification::Melee, true, false, _) => strength?,
+            // Use a ranged weapon as a ranged weapon
+            (Classification::Ranged, Classification::Ranged, _, _, false) => dexterity?,
+            // Use a monk weapon with strength or dexterity
+            (Classification::Melee, Classification::Melee, _, _, true)
+            | (Classification::Ranged, Classification::Ranged, _, _, true)
+            // Use a melee weapon with finesse as a melee weapon
+            | (Classification::Melee, Classification::Melee, _, true, false)
+            // Use a thrown melee weapon with finesse as a ranged weapon
+            | (Classification::Ranged, Classification::Melee, true, true, _) => max(strength?, dexterity?),
             // Use a ranged weapon as a melee weapon (counts as improvised)
             (Classification::Melee, Classification::Ranged, _, _, _) => strength?,
             // Use a melee weapon as a ranged weapon (counts as improvised)
@@ -765,8 +782,6 @@ mod test {
         let actual_damage = roll.to_damage_roll(
             Some(strength),
             Some(dexterity),
-            Some(proficiency_bonus),
-            false,
             false,
             None,
         );
@@ -785,15 +800,12 @@ mod test {
         };
         let strength = 2;
         let dexterity = 3;
-        let proficiency_bonus = 3;
 
         let expected_damage = Some(ConditionalRoll::new_unsafe(4, 6, 2, None));
 
         let actual_damage = roll.to_damage_roll(
             Some(strength),
             Some(dexterity),
-            Some(proficiency_bonus),
-            false,
             true,
             None,
         );
@@ -831,8 +843,6 @@ mod test {
         let actual_damage = roll.to_damage_roll(
             Some(strength),
             Some(dexterity),
-            Some(proficiency_bonus),
-            false,
             false,
             None,
         );
@@ -871,8 +881,6 @@ mod test {
         let actual_damage = roll.to_damage_roll(
             Some(strength),
             Some(dexterity),
-            Some(proficiency_bonus),
-            false,
             false,
             None,
         );
@@ -906,8 +914,6 @@ mod test {
         let actual_damage = roll.to_damage_roll(
             Some(strength),
             Some(dexterity),
-            Some(proficiency_bonus),
-            false,
             false,
             None,
         );
@@ -941,8 +947,6 @@ mod test {
         let actual_damage = roll.to_damage_roll(
             Some(strength),
             Some(dexterity),
-            Some(proficiency_bonus),
-            false,
             false,
             None,
         );
@@ -976,8 +980,6 @@ mod test {
         let actual_damage = roll.to_damage_roll(
             Some(strength),
             Some(dexterity),
-            Some(proficiency_bonus),
-            false,
             false,
             None,
         );
@@ -999,7 +1001,7 @@ mod test {
         let proficiency_bonus = 3;
 
         let expected_attack = Some(ConditionalRoll::new_unsafe(1, 20, 6, None));
-        let expected_damage = Some(ConditionalRoll::new_unsafe(1, 8, 6, None));
+        let expected_damage = Some(ConditionalRoll::new_unsafe(1, 8, 3, None));
 
         let actual_attack = roll.to_attack_roll(
             Some(strength),
@@ -1011,8 +1013,6 @@ mod test {
         let actual_damage = roll.to_damage_roll(
             Some(strength),
             Some(dexterity),
-            Some(proficiency_bonus),
-            true,
             false,
             Some(8),
         );
@@ -1034,7 +1034,7 @@ mod test {
         let proficiency_bonus = 3;
 
         let expected_attack = Some(ConditionalRoll::new_unsafe(1, 20, 5, None));
-        let expected_damage = Some(ConditionalRoll::new_unsafe(1, 8, 5, None));
+        let expected_damage = Some(ConditionalRoll::new_unsafe(1, 8, 2, None));
 
         let actual_attack = roll.to_attack_roll(
             Some(strength),
@@ -1046,8 +1046,6 @@ mod test {
         let actual_damage = roll.to_damage_roll(
             Some(strength),
             Some(dexterity),
-            Some(proficiency_bonus),
-            true,
             false,
             Some(8),
         );
@@ -1069,7 +1067,7 @@ mod test {
         let proficiency_bonus = 3;
 
         let expected_attack = Some(ConditionalRoll::new_unsafe(1, 20, 6, None));
-        let expected_damage = Some(ConditionalRoll::new_unsafe(1, 6, 6, None));
+        let expected_damage = Some(ConditionalRoll::new_unsafe(1, 6, 3, None));
 
         let actual_attack = roll.to_attack_roll(
             Some(strength),
@@ -1081,8 +1079,6 @@ mod test {
         let actual_damage = roll.to_damage_roll(
             Some(strength),
             Some(dexterity),
-            Some(proficiency_bonus),
-            true,
             false,
             Some(4),
         );
@@ -1104,7 +1100,7 @@ mod test {
         let proficiency_bonus = 3;
 
         let expected_attack = Some(ConditionalRoll::new_unsafe(1, 20, 5, None));
-        let expected_damage = Some(ConditionalRoll::new_unsafe(1, 6, 5, None));
+        let expected_damage = Some(ConditionalRoll::new_unsafe(1, 6, 2, None));
 
         let actual_attack = roll.to_attack_roll(
             Some(strength),
@@ -1116,8 +1112,6 @@ mod test {
         let actual_damage = roll.to_damage_roll(
             Some(strength),
             Some(dexterity),
-            Some(proficiency_bonus),
-            true,
             false,
             Some(4),
         );
@@ -1139,7 +1133,7 @@ mod test {
         let proficiency_bonus = 3;
 
         let expected_attack = Some(ConditionalRoll::new_unsafe(1, 20, 5, None));
-        let expected_damage = Some(ConditionalRoll::new_unsafe(2, 6, 5, None));
+        let expected_damage = Some(ConditionalRoll::new_unsafe(2, 6, 2, None));
 
         let actual_attack = roll.to_attack_roll(
             Some(strength),
@@ -1151,10 +1145,206 @@ mod test {
         let actual_damage = roll.to_damage_roll(
             Some(strength),
             Some(dexterity),
+            false,
+            Some(8),
+        );
+
+        assert_eq!(actual_attack, expected_attack);
+        assert_eq!(actual_damage, expected_damage);
+    }
+
+    #[test]
+    fn test_weapon_roll_connie_one_handed() {
+        let roll = WeaponAttackRoll {
+            weapon: WeaponName::Longsword,
+            classification: None,
+            condition: None,
+            handedness: Some(Handedness::OneHanded),
+        };
+        let strength = 2;
+        let dexterity = -1;
+        let proficiency_bonus = 2;
+
+        let expected_attack = Some(ConditionalRoll::new_unsafe(1, 20, 4, None));
+        let expected_damage = Some(ConditionalRoll::new_unsafe(1, 8, 2, None));
+
+        let actual_attack = roll.to_attack_roll(
+            Some(strength),
+            Some(dexterity),
             Some(proficiency_bonus),
             true,
             false,
-            Some(8),
+        );
+        let actual_damage = roll.to_damage_roll(
+            Some(strength),
+            Some(dexterity),
+            false,
+            None,
+        );
+
+        assert_eq!(actual_attack, expected_attack);
+        assert_eq!(actual_damage, expected_damage);
+    }
+
+    #[test]
+    fn test_weapon_roll_connie_two_handed() {
+        let roll = WeaponAttackRoll {
+            weapon: WeaponName::Longsword,
+            classification: None,
+            condition: None,
+            handedness: Some(Handedness::TwoHanded),
+        };
+        let strength = 2;
+        let dexterity = -1;
+        let proficiency_bonus = 2;
+
+        let expected_attack = Some(ConditionalRoll::new_unsafe(1, 20, 4, None));
+        let expected_damage = Some(ConditionalRoll::new_unsafe(1, 10, 2, None));
+
+        let actual_attack = roll.to_attack_roll(
+            Some(strength),
+            Some(dexterity),
+            Some(proficiency_bonus),
+            true,
+            false,
+        );
+        let actual_damage = roll.to_damage_roll(
+            Some(strength),
+            Some(dexterity),
+            false,
+            None,
+        );
+
+        assert_eq!(actual_attack, expected_attack);
+        assert_eq!(actual_damage, expected_damage);
+    }
+
+    #[test]
+    fn test_weapon_roll_loeguo() {
+        let roll = WeaponAttackRoll {
+            weapon: WeaponName::Shortsword,
+            classification: None,
+            condition: None,
+            handedness: Some(Handedness::OneHanded),
+        };
+        let strength = 3;
+        let dexterity = -1;
+        let proficiency_bonus = 2;
+
+        let expected_attack = Some(ConditionalRoll::new_unsafe(1, 20, 5, None));
+        let expected_damage = Some(ConditionalRoll::new_unsafe(1, 6, 3, None));
+
+        let actual_attack = roll.to_attack_roll(
+            Some(strength),
+            Some(dexterity),
+            Some(proficiency_bonus),
+            true,
+            true,
+        );
+        let actual_damage = roll.to_damage_roll(
+            Some(strength),
+            Some(dexterity),
+            false,
+            Some(4),
+        );
+
+        assert_eq!(actual_attack, expected_attack);
+        assert_eq!(actual_damage, expected_damage);
+    }
+
+    #[test]
+    fn test_weapon_roll_tocha_longbow() {
+        let roll = WeaponAttackRoll {
+            weapon: WeaponName::Longbow,
+            classification: None,
+            condition: None,
+            handedness: None,
+        };
+        let strength = 2;
+        let dexterity = 3;
+        let proficiency_bonus = 2;
+
+        let expected_attack = Some(ConditionalRoll::new_unsafe(1, 20, 5, None));
+        let expected_damage = Some(ConditionalRoll::new_unsafe(1, 8, 3, None));
+
+        let actual_attack = roll.to_attack_roll(
+            Some(strength),
+            Some(dexterity),
+            Some(proficiency_bonus),
+            true,
+            false,
+        );
+        let actual_damage = roll.to_damage_roll(
+            Some(strength),
+            Some(dexterity),
+            false,
+            None,
+        );
+
+        assert_eq!(actual_attack, expected_attack);
+        assert_eq!(actual_damage, expected_damage);
+    }
+
+    #[test]
+    fn test_weapon_roll_tocha_spear_one_handed() {
+        let roll = WeaponAttackRoll {
+            weapon: WeaponName::Spear,
+            classification: None,
+            condition: None,
+            handedness: Some(Handedness::OneHanded),
+        };
+        let strength = 2;
+        let dexterity = 3;
+        let proficiency_bonus = 2;
+
+        let expected_attack = Some(ConditionalRoll::new_unsafe(1, 20, 4, None));
+        let expected_damage = Some(ConditionalRoll::new_unsafe(1, 6, 2, None));
+
+        let actual_attack = roll.to_attack_roll(
+            Some(strength),
+            Some(dexterity),
+            Some(proficiency_bonus),
+            true,
+            false,
+        );
+        let actual_damage = roll.to_damage_roll(
+            Some(strength),
+            Some(dexterity),
+            false,
+            None,
+        );
+
+        assert_eq!(actual_attack, expected_attack);
+        assert_eq!(actual_damage, expected_damage);
+    }
+
+    #[test]
+    fn test_weapon_roll_tocha_spear_two_handed() {
+        let roll = WeaponAttackRoll {
+            weapon: WeaponName::Spear,
+            classification: None,
+            condition: None,
+            handedness: Some(Handedness::TwoHanded),
+        };
+        let strength = 2;
+        let dexterity = 3;
+        let proficiency_bonus = 2;
+
+        let expected_attack = Some(ConditionalRoll::new_unsafe(1, 20, 4, None));
+        let expected_damage = Some(ConditionalRoll::new_unsafe(1, 8, 2, None));
+
+        let actual_attack = roll.to_attack_roll(
+            Some(strength),
+            Some(dexterity),
+            Some(proficiency_bonus),
+            true,
+            false,
+        );
+        let actual_damage = roll.to_damage_roll(
+            Some(strength),
+            Some(dexterity),
+            false,
+            None,
         );
 
         assert_eq!(actual_attack, expected_attack);

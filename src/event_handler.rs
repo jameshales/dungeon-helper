@@ -175,7 +175,7 @@ impl Handler {
                     .ok_or_else(|| Response::Warning(ABILITY_NOT_SET_WARNING_TEXT.to_owned()))?;
                 let attack_result = attack_roll_roll.roll(&mut rng);
                 let critical_hit = attack_result.critical() == Some(Critical::Success);
-                let damage_roll = attack_roll.to_damage_roll(strength, dexterity, proficiency_bonus, proficiency, critical_hit, character.martial_arts_damage_die()).ok_or_else(|| Response::Warning(ABILITY_NOT_SET_WARNING_TEXT.to_owned()))?;
+                let damage_roll = attack_roll.to_damage_roll(strength, dexterity, critical_hit, character.martial_arts_damage_die()).ok_or_else(|| Response::Warning(ABILITY_NOT_SET_WARNING_TEXT.to_owned()))?;
                 let damage_result = damage_roll.roll(&mut rng);
                 Ok((attack_roll_roll, attack_result, damage_roll, damage_result))
             })
