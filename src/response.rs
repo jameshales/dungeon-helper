@@ -94,13 +94,19 @@ impl Response {
                 e.field("Result", format!("🎲 {}", result), false);
                 e.thumbnail(&message.author.face())
             }),
-            Response::Clarification(text) => builder.content(format!("📎 <@{}> {}", message.author.id, text)),
+            Response::Clarification(text) => {
+                builder.content(format!("📎 <@{}> {}", message.author.id, text))
+            }
             Response::Error(_) => builder.content(format!(
                 "💥 <@{}> **Error:** A technical error has occurred. Reference ID: {}",
                 message.author.id, &message.id
             )),
-            Response::Help(text) => builder.content(format!("🎱 <@{}> {}", message.author.id, text)),
-            Response::Warning(text) => builder.content(format!("⚠️ <@{}> {}", message.author.id, text)),
+            Response::Help(text) => {
+                builder.content(format!("🎱 <@{}> {}", message.author.id, text))
+            }
+            Response::Warning(text) => {
+                builder.content(format!("⚠️ <@{}> {}", message.author.id, text))
+            }
         }
     }
 }

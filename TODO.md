@@ -35,6 +35,8 @@
 
   Maybe have a GreaseMonkey script that does the needful and produces a Base-64
   code that can be provided to the bot.
+- Delete error messages from channel after a short delay, to keep the chat log
+  clean.
 
 ## Done
 

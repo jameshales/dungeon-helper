@@ -21,7 +21,7 @@ use symspell::{SymSpell, UnicodeStringStrategy};
 use serenity::{
     model::{
         channel::Message,
-        gateway::Ready,
+        gateway::{Activity, Ready},
         id::{ChannelId, UserId},
     },
     prelude::*,
@@ -384,12 +384,13 @@ impl EventHandler for Handler {
         };
     }
 
-    fn ready(&self, _: Context, ready: Ready) {
+    fn ready(&self, context: Context, ready: Ready) {
         let mut bot_id = self
             .bot_id
             .write()
             .expect("RwLock for bot_id has been poisoned");
         *bot_id = Some(ready.user.id.to_string());
+        context.set_activity(Activity::playing("Dungeons & Dragons"));
         info!(target: "dungeon-helper", "{} is connected!", ready.user.name);
     }
 }
