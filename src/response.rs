@@ -3,8 +3,7 @@ use crate::character_roll::Check;
 use crate::error::Error;
 use crate::roll::{Condition, ConditionalRoll, ConditionalRollResult, Roll, RollResult};
 use serenity::builder::CreateMessage;
-use serenity::model::id::MessageId;
-use serenity::model::user::User;
+use serenity::model::channel::Message;
 
 pub enum Response {
     AttackRoll {
@@ -42,8 +41,8 @@ impl Response {
 
     pub fn to_message<'a, 'b>(
         &self,
-        author: &User,
-        message_id: MessageId,
+        author_nick: &str,
+        message: &Message,
         builder: &'b mut CreateMessage<'a>,
     ) -> &'b mut CreateMessage<'a> {
         match self {
@@ -64,7 +63,7 @@ impl Response {
                 builder.embed(|e| {
                     e.title(format!(
                         "{} attacks{} using {}{}!",
-                        author.name, attack_handedness, attack_name, condition
+                        author_nick, attack_handedness, attack_name, condition
                     ));
                     e.field("Attack", format!("🛡️ {}", to_hit_result), true);
                     e.field("Damage", format!("❤️ {}", damage_result), true);
@@ -74,7 +73,7 @@ impl Response {
                             to_hit_roll, damage_roll
                         ))
                     });
-                    e.thumbnail(&author.face())
+                    e.thumbnail(&message.author.face())
                 })
             }
             Response::CharacterRoll {
@@ -84,24 +83,24 @@ impl Response {
             } => {
                 let condition = conditional_message(roll.condition());
                 builder.embed(|e| {
-                    e.title(format!("{} rolls {}{}!", author.name, check, condition));
+                    e.title(format!("{} rolls {}{}!", author_nick, check, condition));
                     e.field("Result", format!("🎲 {}", result), false);
                     e.footer(|f| f.text(format!("Roll: {}", roll)));
-                    e.thumbnail(&author.face())
+                    e.thumbnail(&message.author.face())
                 })
             }
             Response::DiceRoll { roll, result } => builder.embed(|e| {
-                e.title(format!("{} rolls {}!", author.name, roll));
+                e.title(format!("{} rolls {}!", author_nick, roll));
                 e.field("Result", format!("🎲 {}", result), false);
-                e.thumbnail(&author.face())
+                e.thumbnail(&message.author.face())
             }),
-            Response::Clarification(message) => builder.content(format!("📎 <@{}> {}", author.id, message)),
+            Response::Clarification(text) => builder.content(format!("📎 <@{}> {}", message.author.id, text)),
             Response::Error(_) => builder.content(format!(
                 "💥 <@{}> **Error:** A technical error has occurred. Reference ID: {}",
-                author.id, message_id
+                message.author.id, &message.id
             )),
-            Response::Help(message) => builder.content(format!("🎱 <@{}> {}", author.id, message)),
-            Response::Warning(message) => builder.content(format!("⚠️ <@{}> {}", author.id, message)),
+            Response::Help(text) => builder.content(format!("🎱 <@{}> {}", message.author.id, text)),
+            Response::Warning(text) => builder.content(format!("⚠️ <@{}> {}", message.author.id, text)),
         }
     }
 }

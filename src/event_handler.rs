@@ -13,6 +13,7 @@ use r2d2::Pool;
 use r2d2_sqlite::SqliteConnectionManager;
 use snips_nlu_lib::SnipsNluEngine;
 use snips_nlu_ontology::IntentParserResult;
+use std::borrow::Cow;
 use std::convert::identity;
 use std::sync::RwLock;
 use symspell::{SymSpell, UnicodeStringStrategy};
@@ -352,8 +353,12 @@ impl EventHandler for Handler {
                 if let Response::Error(error) = &response {
                     error!(target: "dungeon-helper", "Error processing command. Message ID: {}; Error = {:?}", message.id, error);
                 };
+                let author_nick = match message.author_nick(&ctx.http) {
+                    Some(nick) => Cow::Owned(nick),
+                    None => Cow::Borrowed(&message.author.name),
+                };
                 let result = message.channel_id.send_message(&ctx.http, |builder| {
-                    response.to_message(&message.author, message.id, builder)
+                    response.to_message(&author_nick, &message, builder)
                 });
                 match result {
                     Ok(sent_message) => {
