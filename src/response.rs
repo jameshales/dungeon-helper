@@ -3,7 +3,7 @@ use crate::character_roll::Check;
 use crate::error::Error;
 use crate::roll::{Condition, ConditionalRoll, ConditionalRollResult, Roll, RollResult};
 use serenity::builder::CreateMessage;
-use serenity::model::id::{MessageId, UserId};
+use serenity::model::id::MessageId;
 use serenity::model::user::User;
 
 pub enum Response {
@@ -37,53 +37,6 @@ impl Response {
             | Response::CharacterRoll { .. }
             | Response::DiceRoll { .. } => true,
             _ => false,
-        }
-    }
-
-    pub fn render(&self, author_id: UserId, message_id: MessageId) -> String {
-        match self {
-            Response::AttackRoll {
-                attack_name,
-                attack_handedness,
-                to_hit_roll,
-                to_hit_result,
-                damage_roll,
-                damage_result,
-            } => {
-                let attack_handedness = match attack_handedness {
-                    Some(Handedness::OneHanded) => " one handed",
-                    Some(Handedness::TwoHanded) => " two handed",
-                    None => "",
-                };
-                format!(
-                    "🎲 <@{}> attacked{} with {} to hit armour class ({}) = 🛡️ {}; and dealing damage ({}) = ❤️ {}",
-                    author_id,
-                    attack_handedness,
-                    attack_name,
-                    to_hit_roll,
-                    to_hit_result,
-                    damage_roll,
-                    damage_result,
-                )
-            }
-            Response::CharacterRoll {
-                check,
-                roll,
-                result,
-            } => format!(
-                "🎲 <@{}> rolled {} ({}) = {}",
-                author_id, check, roll, result,
-            ),
-            Response::Clarification(message) => format!("📎 <@{}> {}", author_id, message),
-            Response::DiceRoll { roll, result } => {
-                format!("🎲 <@{}> rolled {} = {}", author_id, roll, result)
-            }
-            Response::Error(_) => format!(
-                "💥 <@{}> **Error:** A technical error has occurred. Reference ID: {}",
-                author_id, message_id
-            ),
-            Response::Help(message) => format!("🎱 <@{}> {}", author_id, message),
-            Response::Warning(message) => format!("⚠️ <@{}> {}", author_id, message),
         }
     }
 
@@ -142,7 +95,13 @@ impl Response {
                 e.field("Result", format!("🎲 {}", result), false);
                 e.thumbnail(&author.face())
             }),
-            _ => builder.content(self.render(author.id, message_id)),
+            Response::Clarification(message) => builder.content(format!("📎 <@{}> {}", author.id, message)),
+            Response::Error(_) => builder.content(format!(
+                "💥 <@{}> **Error:** A technical error has occurred. Reference ID: {}",
+                author.id, message_id
+            )),
+            Response::Help(message) => builder.content(format!("🎱 <@{}> {}", author.id, message)),
+            Response::Warning(message) => builder.content(format!("⚠️ <@{}> {}", author.id, message)),
         }
     }
 }
