@@ -2,6 +2,8 @@ CREATE TABLE characters (
   channel_id TEXT NOT NULL,
   user_id TEXT NOT NULL,
 
+  avatar_url TEXT NULL,
+
   -- Level
   level INTEGER NULL,
 

@@ -12,6 +12,7 @@ use std::fmt;
 /// skill modifiers are calculated.
 #[derive(Debug, Eq, PartialEq)]
 pub struct Character {
+    avatar_url: Option<String>,
     level: Option<i32>,
     jack_of_all_trades: bool,
     martial_arts: bool,
@@ -62,6 +63,7 @@ impl Character {
         connection
             .query_row(
                 "SELECT \
+                 avatar_url, \
                  level, \
                  jack_of_all_trades, \
                  martial_arts, \
@@ -106,6 +108,7 @@ impl Character {
 
     pub fn from_row(row: &Row) -> RusqliteResult<Character> {
         Ok(Character {
+            avatar_url: row.get("avatar_url")?,
             level: row.get("level")?,
             jack_of_all_trades: row.get("jack_of_all_trades")?,
             martial_arts: row.get("martial_arts")?,
@@ -143,6 +146,10 @@ impl Character {
             stealth_proficiency: row.get("stealth_proficiency")?,
             survival_proficiency: row.get("survival_proficiency")?,
         })
+    }
+
+    pub fn avatar_url(&self) -> Option<&str> {
+        self.avatar_url.as_deref()
     }
 
     pub fn martial_arts(&self) -> bool {
@@ -590,6 +597,7 @@ mod test {
     fn test_profiency_bonus() {
         fn character(level: Option<i32>) -> Character {
             Character {
+                avatar_url: None,
                 level,
                 jack_of_all_trades: false,
                 martial_arts: false,
@@ -641,6 +649,7 @@ mod test {
     fn test_martial_arts_damage_die() {
         fn character(level: Option<i32>, martial_arts: bool) -> Character {
             Character {
+                avatar_url: None,
                 level,
                 jack_of_all_trades: false,
                 martial_arts,
@@ -703,6 +712,7 @@ mod test {
     fn test_strength() {
         fn character(strength: Option<i32>) -> Character {
             Character {
+                avatar_url: None,
                 level: None,
                 jack_of_all_trades: false,
                 martial_arts: false,
@@ -826,6 +836,7 @@ mod test {
     fn test_saving_throw() {
         fn character(strength: Option<i32>) -> Character {
             Character {
+                avatar_url: None,
                 level: None,
                 jack_of_all_trades: false,
                 martial_arts: false,
@@ -953,6 +964,7 @@ mod test {
             athletics_proficiency: Proficiency,
         ) -> Character {
             Character {
+                avatar_url: None,
                 level,
                 jack_of_all_trades: false,
                 martial_arts: false,

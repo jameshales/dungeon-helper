@@ -13,15 +13,18 @@ pub enum Response {
         to_hit_result: ConditionalRollResult,
         damage_roll: Roll,
         damage_result: RollResult,
+        avatar_url: Option<String>,
     },
     CharacterRoll {
         check: Check,
         roll: ConditionalRoll,
         result: ConditionalRollResult,
+        avatar_url: Option<String>,
     },
     DiceRoll {
         roll: ConditionalRoll,
         result: ConditionalRollResult,
+        avatar_url: Option<String>,
     },
     Clarification(String),
     Error(Error),
@@ -53,6 +56,7 @@ impl Response {
                 to_hit_result,
                 damage_roll,
                 damage_result,
+                avatar_url,
             } => {
                 let condition = conditional_message(to_hit_roll.condition());
                 let attack_handedness = match attack_handedness {
@@ -73,26 +77,32 @@ impl Response {
                             to_hit_roll, damage_roll
                         ))
                     });
-                    e.thumbnail(&message.author.face())
+
+                    e.thumbnail(avatar_url.as_ref().unwrap_or(&message.author.face()))
                 })
             }
             Response::CharacterRoll {
                 check,
                 roll,
                 result,
+                avatar_url,
             } => {
                 let condition = conditional_message(roll.condition());
                 builder.embed(|e| {
                     e.title(format!("{} rolls {}{}!", author_nick, check, condition));
                     e.field("Result", format!("🎲 {}", result), false);
                     e.footer(|f| f.text(format!("Roll: {}", roll)));
-                    e.thumbnail(&message.author.face())
+                    e.thumbnail(avatar_url.as_ref().unwrap_or(&message.author.face()))
                 })
             }
-            Response::DiceRoll { roll, result } => builder.embed(|e| {
+            Response::DiceRoll {
+                roll,
+                result,
+                avatar_url,
+            } => builder.embed(|e| {
                 e.title(format!("{} rolls {}!", author_nick, roll));
                 e.field("Result", format!("🎲 {}", result), false);
-                e.thumbnail(&message.author.face())
+                e.thumbnail(avatar_url.as_ref().unwrap_or(&message.author.face()))
             }),
             Response::Clarification(text) => {
                 builder.content(format!("📎 <@{}> {}", message.author.id, text))

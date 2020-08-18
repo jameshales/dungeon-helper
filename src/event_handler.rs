@@ -37,7 +37,7 @@ enum Action {
     IgnoreChannelDisabled,
     IgnoreCommandMissing,
     IgnoreOwnMessage,
-    Respond(Response),
+    Respond(Box<Response>),
 }
 
 pub struct Handler {
@@ -90,19 +90,19 @@ impl Handler {
                             if !is_admin && !channel.enabled {
                                 Action::IgnoreChannelDisabled
                             } else if is_private && !command.is_private() {
-                                Action::Respond(Response::Warning(format!("It looks like you're trying to {}. You can't do that in a private message.", command.description())))
+                                Action::Respond(Box::new(Response::Warning(format!("It looks like you're trying to {}. You can't do that in a private message.", command.description()))))
                             } else {
-                                Action::Respond(self.run_command(
+                                Action::Respond(Box::new(self.run_command(
                                     command,
                                     message.channel_id,
                                     message.author.id,
-                                ))
+                                )))
                             }
                         }
-                        Err(error) => Action::Respond(error.into_response()),
+                        Err(error) => Action::Respond(Box::new(error.into_response())),
                     }
                 })
-                .unwrap_or_else(|error| Action::Respond(error.into_response()))
+                .unwrap_or_else(|error| Action::Respond(Box::new(error.into_response())))
         })
     }
 
@@ -112,7 +112,7 @@ impl Handler {
             Command::CharacterRoll(roll) => self.character_roll(&roll, channel_id, author_id),
             Command::Help => Handler::help(),
             Command::HelpShorthand => Handler::help_shorthand(),
-            Command::Roll(roll) => Handler::roll(roll),
+            Command::Roll(roll) => self.roll(roll, channel_id, author_id),
         }
     }
 
@@ -193,16 +193,26 @@ impl Handler {
                     )
                     .ok_or_else(|| Response::Warning(ABILITY_NOT_SET_WARNING_TEXT.to_owned()))?;
                 let damage_result = damage_roll.roll(&mut rng);
-                Ok((to_hit_roll, to_hit_result, damage_roll, damage_result))
-            })
-            .map(
-                |(to_hit_roll, to_hit_result, damage_roll, damage_result)| Response::AttackRoll {
-                    attack_name: attack_roll.get_name(),
-                    attack_handedness: attack_roll.get_handedness(),
+                let avatar_url = character.avatar_url().map(|s| s.to_owned());
+                Ok((
                     to_hit_roll,
                     to_hit_result,
                     damage_roll,
                     damage_result,
+                    avatar_url,
+                ))
+            })
+            .map(
+                |(to_hit_roll, to_hit_result, damage_roll, damage_result, avatar_url)| {
+                    Response::AttackRoll {
+                        attack_name: attack_roll.get_name(),
+                        attack_handedness: attack_roll.get_handedness(),
+                        to_hit_roll,
+                        to_hit_result,
+                        damage_roll,
+                        damage_result,
+                        avatar_url,
+                    }
                 },
             )
             .unwrap_or_else(identity)
@@ -226,17 +236,20 @@ impl Handler {
                     .ok_or_else(|| Response::Warning(CHARACTER_NOT_FOUND_WARNING_TEXT.to_owned()))
             })
             .and_then(|character| {
+                let avatar_url = character.avatar_url().map(|s| s.to_owned());
                 character_roll
                     .to_roll(&character)
                     .ok_or_else(|| Response::Warning(ABILITY_NOT_SET_WARNING_TEXT.to_owned()))
+                    .map(|roll| (roll, avatar_url))
             })
-            .map(|roll| {
+            .map(|(roll, avatar_url)| {
                 let mut rng = rand::thread_rng();
                 let result = roll.roll(&mut rng);
                 Response::CharacterRoll {
                     check: character_roll.check,
                     roll,
                     result,
+                    avatar_url,
                 }
             })
             .unwrap_or_else(identity)
@@ -270,10 +283,26 @@ impl Handler {
         )
     }
 
-    fn roll(roll: ConditionalRoll) -> Response {
-        let mut rng = rand::thread_rng();
-        let result = roll.roll(&mut rng);
-        Response::DiceRoll { roll, result }
+    fn roll(&self, roll: ConditionalRoll, channel_id: ChannelId, author_id: UserId) -> Response {
+        self.pool
+            .get()
+            .map_err(|error| Response::Error(Error::R2D2Error(error)))
+            .and_then(|connection| {
+                Character::get(&connection, channel_id, author_id)
+                    .map_err(|error| Response::Error(Error::RusqliteError(error)))
+                    .and_then(|character| {
+                        let mut rng = rand::thread_rng();
+                        let result = roll.roll(&mut rng);
+                        let avatar_url =
+                            character.and_then(|c| c.avatar_url().map(|s| s.to_owned()));
+                        Ok(Response::DiceRoll {
+                            roll,
+                            result,
+                            avatar_url,
+                        })
+                    })
+            })
+            .unwrap_or_else(identity)
     }
 
     fn get_channel(&self, channel_id: ChannelId) -> Channel {
@@ -350,7 +379,7 @@ impl EventHandler for Handler {
                 info!(target: "dungeon-helper", "Ignoring message because it was sent by us. Message ID: {}", message.id);
             }
             Action::Respond(response) => {
-                if let Response::Error(error) = &response {
+                if let Response::Error(error) = &*response {
                     error!(target: "dungeon-helper", "Error processing command. Message ID: {}; Error = {:?}", message.id, error);
                 };
                 let author_nick = match message.author_nick(&ctx.http) {
