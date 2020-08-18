@@ -1,4 +1,4 @@
-use crate::attack_roll::{AttackRoll, Handedness, ImprovisedWeaponAttackRoll, WeaponAttackRoll};
+use crate::attack_roll::AttackRoll;
 use crate::channel::Channel;
 use crate::character::Character;
 use crate::character_roll::CharacterRoll;
@@ -145,10 +145,12 @@ impl Handler {
             .and_then(|connection| {
                 Character::get(&connection, channel_id, author_id)
                     .map_err(|error| Response::Error(Error::RusqliteError(error)))
-                    .and_then(|character| character.map_or(
-                        Err(Response::Warning(CHARACTER_NOT_FOUND_WARNING_TEXT.to_owned())),
-                        |character| {
-                            match attack_roll {
+                    .and_then(|character| {
+                        character.map_or(
+                            Err(Response::Warning(
+                                CHARACTER_NOT_FOUND_WARNING_TEXT.to_owned(),
+                            )),
+                            |character| match attack_roll {
                                 AttackRoll::Weapon(attack_roll) => {
                                     Character::has_weapon_proficiency(
                                         &connection,
@@ -160,50 +162,48 @@ impl Handler {
                                     .map(|proficiency| (character, proficiency))
                                     .map_err(|error| Response::Error(Error::RusqliteError(error)))
                                 }
-                                _ => Ok((character, false))
-                            }
-                        })
-                    )
+                                _ => Ok((character, false)),
+                            },
+                        )
+                    })
             })
             .and_then(|(character, proficiency)| {
                 let strength = character.strength().map(|a| a.modifier);
                 let dexterity = character.dexterity().map(|a| a.modifier);
                 let proficiency_bonus = character.proficiency_bonus();
                 let mut rng = rand::thread_rng();
-                let attack_roll_roll = attack_roll
-                    .to_attack_roll(strength, dexterity, proficiency_bonus, proficiency, character.martial_arts())
+                let to_hit_roll = attack_roll
+                    .to_attack_roll(
+                        strength,
+                        dexterity,
+                        proficiency_bonus,
+                        proficiency,
+                        character.martial_arts(),
+                    )
                     .ok_or_else(|| Response::Warning(ABILITY_NOT_SET_WARNING_TEXT.to_owned()))?;
-                let attack_result = attack_roll_roll.roll(&mut rng);
-                let critical_hit = attack_result.critical() == Some(Critical::Success);
-                let damage_roll = attack_roll.to_damage_roll(strength, dexterity, critical_hit, character.martial_arts_damage_die()).ok_or_else(|| Response::Warning(ABILITY_NOT_SET_WARNING_TEXT.to_owned()))?;
+                let to_hit_result = to_hit_roll.roll(&mut rng);
+                let critical_hit = to_hit_result.critical() == Some(Critical::Success);
+                let damage_roll = attack_roll
+                    .to_damage_roll(
+                        strength,
+                        dexterity,
+                        critical_hit,
+                        character.martial_arts_damage_die(),
+                    )
+                    .ok_or_else(|| Response::Warning(ABILITY_NOT_SET_WARNING_TEXT.to_owned()))?;
                 let damage_result = damage_roll.roll(&mut rng);
-                Ok((attack_roll_roll, attack_result, damage_roll, damage_result))
+                Ok((to_hit_roll, to_hit_result, damage_roll, damage_result))
             })
-            .map(|(attack_roll_roll, attack_result, damage_roll, damage_result)| {
-                let attack_name = match attack_roll {
-                    AttackRoll::ImprovisedWeapon(ImprovisedWeaponAttackRoll { classification, .. }) => format!("improvised weapon (as {})", classification),
-                    AttackRoll::UnarmedStrike(_) => "unarmed strike".to_owned(),
-                    AttackRoll::Weapon(WeaponAttackRoll { classification: Some(classification), weapon, .. }) => format!("{} (as {})", weapon, classification),
-                    AttackRoll::Weapon(WeaponAttackRoll { classification: None, weapon, .. }) => weapon.to_string(),
-                };
-                let attack_handedness = match attack_roll {
-                    AttackRoll::Weapon(WeaponAttackRoll { handedness: Some(handedness), weapon, .. }) if weapon.to_weapon().versatile.is_some() =>
-                        match handedness {
-                            Handedness::OneHanded => " one handed",
-                            Handedness::TwoHanded => " two handed",
-                        }
-                    _ => "",
-                };
-                Response::DiceRoll(format!(
-                    "attacked{} with {} to hit armour class ({}) = 🛡️ {}; and dealing damage ({}) = ❤️ {}",
-                    attack_handedness,
-                    attack_name,
-                    attack_roll_roll,
-                    attack_result,
+            .map(
+                |(to_hit_roll, to_hit_result, damage_roll, damage_result)| Response::AttackRoll {
+                    attack_name: attack_roll.get_name(),
+                    attack_handedness: attack_roll.get_handedness(),
+                    to_hit_roll,
+                    to_hit_result,
                     damage_roll,
-                    damage_result
-                ))
-            })
+                    damage_result,
+                },
+            )
             .unwrap_or_else(identity)
     }
 
@@ -232,10 +232,11 @@ impl Handler {
             .map(|roll| {
                 let mut rng = rand::thread_rng();
                 let result = roll.roll(&mut rng);
-                Response::DiceRoll(format!(
-                    "rolled {} ({}) = {}",
-                    character_roll.check, roll, result
-                ))
+                Response::CharacterRoll {
+                    check: character_roll.check,
+                    roll,
+                    result,
+                }
             })
             .unwrap_or_else(identity)
     }
@@ -271,7 +272,7 @@ impl Handler {
     fn roll(roll: ConditionalRoll) -> Response {
         let mut rng = rand::thread_rng();
         let result = roll.roll(&mut rng);
-        Response::DiceRoll(format!("rolled {} = {}", roll, result))
+        Response::DiceRoll { roll, result }
     }
 
     fn get_channel(&self, channel_id: ChannelId) -> Channel {
@@ -351,12 +352,24 @@ impl EventHandler for Handler {
                 if let Response::Error(error) = &response {
                     error!(target: "dungeon-helper", "Error processing command. Message ID: {}; Error = {:?}", message.id, error);
                 };
-                let result = message
-                    .channel_id
-                    .say(&ctx.http, response.render(message.author.id, message.id));
+                let result = message.channel_id.send_message(&ctx.http, |builder| {
+                    response.to_message(&message.author, message.id, builder)
+                });
                 match result {
                     Ok(sent_message) => {
-                        info!(target: "dungeon-helper", "Sent message. Message ID: {}; Sent Message ID: {}; Content: {}", message.id, sent_message.id, sent_message.content.escape_debug())
+                        info!(target: "dungeon-helper", "Sent message. Message ID: {}; Sent Message ID: {}; Content: {}", message.id, sent_message.id, sent_message.content.escape_debug());
+
+                        if response.is_roll() {
+                            let delete_result = message.delete(&ctx.http);
+                            match delete_result {
+                                Ok(()) => {
+                                    info!(target: "dungeon-helper", "Deleted user message. Message ID: {}", message.id)
+                                }
+                                Err(error) => {
+                                    error!(target: "dungeon-helper", "Error deleting message. Message ID: {}; Error: {:?}", message.id, error)
+                                }
+                            }
+                        }
                     }
                     Err(error) => {
                         error!(target: "dungeon-helper", "Error sending message. Message ID: {}; Error: {:?}", message.id, error)

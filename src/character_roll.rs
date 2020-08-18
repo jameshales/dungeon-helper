@@ -38,7 +38,7 @@ impl CharacterRoll {
     }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Copy, Debug)]
 pub enum Check {
     Ability(AbilityName),
     Initiative,

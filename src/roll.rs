@@ -255,7 +255,7 @@ impl Roll {
 
     /// Roll the dice once, not taking into account advantage or disadvantage. This is repeated in
     /// order to perform a roll with advantage or disadvantage.
-    fn roll<R: Rng + ?Sized>(&self, rng: &mut R) -> RollResult {
+    pub fn roll<R: Rng + ?Sized>(&self, rng: &mut R) -> RollResult {
         let dice = self.roll_once_component(rng);
         let sum: i32 = dice.iter().sum();
         let result = sum + self.modifier;
@@ -333,6 +333,10 @@ impl ConditionalRoll {
         condition: Option<Condition>,
     ) -> ConditionalRoll {
         ConditionalRoll::from_roll(Roll::new_unsafe(rolls, sides, modifier), condition)
+    }
+
+    pub fn condition(&self) -> Option<Condition> {
+        self.condition
     }
 
     pub fn from_roll(roll: Roll, condition: Option<Condition>) -> ConditionalRoll {
